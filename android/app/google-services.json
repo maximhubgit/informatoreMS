@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "325738421283",
+    "project_id": "informatorems-784a1",
+    "storage_bucket": "informatorems-784a1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:325738421283:android:1bd57ba071f656c0706596",
+        "android_client_info": {
+          "package_name": "com.informatorems.informatoreMS"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwvRJr4rDRrfBru-G2YsuF-Uq2ZI5NXuw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
