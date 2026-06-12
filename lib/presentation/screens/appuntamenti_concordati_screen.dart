@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:informatoreMS/core/extensions/date_time_extension.dart';
+import 'package:informatoreMS/core/extensions/specializzazione_extension.dart';
 import 'package:informatoreMS/core/models/calendario_appuntamento.dart';
+import 'package:informatoreMS/core/models/fascia_oraria.dart';
 import 'package:informatoreMS/core/models/medico.dart';
-import 'package:informatoreMS/presentation/providers/zone_provider.dart';
+import 'package:informatoreMS/core/models/specializzazione.dart';
+import 'package:informatoreMS/core/models/zona.dart';
 import 'package:informatoreMS/presentation/providers/medici_provider.dart';
+import 'package:informatoreMS/presentation/providers/zone_provider.dart';
 import 'package:informatoreMS/presentation/providers/calendario_provider.dart';
+import 'package:informatoreMS/presentation/providers/specializzazione_provider.dart';
 import 'appuntamento_edit_screen.dart';
 import 'package:uuid/uuid.dart';
 
 /// Schermata per gestire gli appuntamenti concordati.
-/// Mostra una tabella con filtri avanzati.
+/// Layout moderno: ricerca, filtri rapidi, lista raggruppata per giorno.
 class AppuntamentiConcordatiScreen extends ConsumerStatefulWidget {
   const AppuntamentiConcordatiScreen({super.key});
 
@@ -20,6 +25,16 @@ class AppuntamentiConcordatiScreen extends ConsumerStatefulWidget {
 
 class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConcordatiScreen> {
   final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  /// Filtro per stato: null = tutti, altrimenti stato specifico.
+  StatoCalendario? _statoFilter;
+
+  /// Filtro rapido per range date.
+  _DateRangePreset _rangePreset = _DateRangePreset.all;
+
+  /// Range personalizzato (usato quando _rangePreset == custom).
+  (DateTime, DateTime)? _customRange;
 
   @override
   void dispose() {
@@ -31,269 +46,193 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestione Appuntamenti Concordati'),
+        title: const Text('Concordati'),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Aggiungi appuntamento',
-            onPressed: showAddDialog,
+            icon: const Icon(Icons.tune_rounded),
+            tooltip: 'Filtri avanzati',
+            onPressed: _showAdvancedFiltersDialog,
           ),
         ],
       ),
       body: Column(
         children: [
-          // Ricerca + filtri nella stessa riga
-          buildSearchAndFilters(context),
+          _buildSearchBar(),
+          _buildFilterRow(),
           const Divider(height: 1),
-          // Tabella appuntamenti
-          Expanded(child: buildTable(context)),
+          Expanded(child: _buildGroupedList()),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddDialog,
+        icon: const Icon(Icons.add),
+        label: const Text('Nuovo'),
       ),
     );
   }
 
-  Widget buildSearchAndFilters(BuildContext context) {
-    final zoneSelezionate = ref.watch(zoneSelezionateConcordatiProvider);
-    final dateRange = ref.watch(dateRangeConcordatiProvider);
-
+  // ── Barra di ricerca ────────────────────────────────────────────────────
+  Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
+        decoration: InputDecoration(
+          hintText: 'Cerca medico, struttura, indirizzo...',
+          prefixIcon: const Icon(Icons.search_rounded),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  tooltip: 'Pulisci',
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(28),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(28),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(28),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Riga di chip per stato e range rapido ──────────────────────────────
+  Widget _buildFilterRow() {
+    return SizedBox(
+      height: 48,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         children: [
-          // Campo ricerca
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Cerca medico',
-                hintText: 'Nome medico...',
-                prefixIcon: const Icon(Icons.search),
-                isDense: true,
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          ref.read(filtroRicercaConcordatiProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
-              ),
-              onChanged: (value) => ref.read(filtroRicercaConcordatiProvider.notifier).state = value,
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Tasto filtri unico
-          IconButton(
-            icon: Badge(
-              isLabelVisible: zoneSelezionate.isNotEmpty || dateRange != null,
-              child: const Icon(Icons.filter_list),
-            ),
-            tooltip: 'Filtri avanzati',
-            onPressed: () => showAdvancedFiltersDialog(context),
-          ),
+          _statusChip(label: 'Tutti', value: null),
+          _statusChip(label: 'Concordati', value: StatoCalendario.concordato, defaultSelected: true),
+          _statusChip(label: 'Proposti', value: StatoCalendario.proposto),
+          _statusChip(label: 'Confermati', value: StatoCalendario.confermato),
+          _statusChip(label: 'Fatti', value: StatoCalendario.fatto),
+          _statusChip(label: 'Annullati', value: StatoCalendario.annullato),
+          const VerticalDivider(width: 16, indent: 8, endIndent: 8),
+          _rangeChip(_DateRangePreset.all, 'Tutto'),
+          _rangeChip(_DateRangePreset.today, 'Oggi'),
+          _rangeChip(_DateRangePreset.week, 'Settimana'),
+          _rangeChip(_DateRangePreset.month, 'Mese'),
+          _rangeChip(_DateRangePreset.custom, 'Custom…'),
         ],
       ),
     );
   }
 
-  Future<void> showAdvancedFiltersDialog(BuildContext context) async {
-    final zoneAsync = ref.read(zoneProvider);
-    final zoneSelezionate = ref.read(zoneSelezionateConcordatiProvider);
-    final dateRange = ref.read(dateRangeConcordatiProvider);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            DateTime? startDate = dateRange?.$1;
-            DateTime? endDate = dateRange?.$2;
-
-            return AlertDialog(
-              title: const Text('Filtri Avanzati'),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Sezione Zone
-                      const Text('Zone', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      zoneAsync.when(
-                        data: (zone) => Wrap(
-                          spacing: 8,
-                          children: zone.map((zona) {
-                            final isSelected = zoneSelezionate.contains(zona.id);
-                            return FilterChip(
-                              label: Text(zona.nome),
-                              selected: isSelected,
-                              onSelected: (v) {
-                                final nuovaLista = List<String>.from(zoneSelezionate);
-                                if (v) {
-                                  nuovaLista.add(zona.id);
-                                } else {
-                                  nuovaLista.remove(zona.id);
-                                }
-                                ref.read(zoneSelezionateConcordatiProvider.notifier).state = nuovaLista;
-                              },
-                            );
-                          }).toList(),
-                        ),
-                        loading: () => const LinearProgressIndicator(),
-                        error: (_, __) => const SizedBox.shrink(),
-                      ),
-                      const SizedBox(height: 24),
-                      // Sezione Date
-                      const Text('Range Date', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: InkWell(
-                              onTap: () async {
-                                final picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: startDate ?? DateTime.now(),
-                                  firstDate: DateTime.now().subtract(const Duration(days: 30)),
-                                  lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-                                );
-                                if (picked != null) {
-                                  setState(() => startDate = picked);
-                                }
-                              },
-                              child: InputDecorator(
-                                decoration: const InputDecoration(labelText: 'Inizio'),
-                                child: Text(startDate?.formatItalia() ?? 'Seleziona'),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () async {
-                                final picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: endDate ?? DateTime.now().add(const Duration(days: 30)),
-                                  firstDate: DateTime.now().subtract(const Duration(days: 30)),
-                                  lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-                                );
-                                if (picked != null) {
-                                  setState(() => endDate = picked);
-                                }
-                              },
-                              child: InputDecorator(
-                                decoration: const InputDecoration(labelText: 'Fine'),
-                                child: Text(endDate?.formatItalia() ?? 'Seleziona'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    ref.read(zoneSelezionateConcordatiProvider.notifier).state = [];
-                    ref.read(dateRangeConcordatiProvider.notifier).state = null;
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Pulisci'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    if (startDate != null && endDate != null) {
-                      ref.read(dateRangeConcordatiProvider.notifier).state = (startDate!, endDate!);
-                    } else {
-                      ref.read(dateRangeConcordatiProvider.notifier).state = null;
-                    }
-                    Navigator.pop(context);
-                  },
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+  Widget _statusChip({required String label, required StatoCalendario? value, bool defaultSelected = false}) {
+    // Se nessun filtro esplicito e non è il default, mostra "Tutti" non selezionato
+    final isActive = (value == null && _statoFilter == null) || _statoFilter == value;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      child: FilterChip(
+        label: Text(label),
+        selected: isActive,
+        onSelected: (_) => setState(() => _statoFilter = value),
+      ),
     );
   }
 
-  Widget buildTable(BuildContext context) {
+  Widget _rangeChip(_DateRangePreset value, String label) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: _rangePreset == value,
+        onSelected: (_) {
+          if (value == _DateRangePreset.custom) {
+            _showAdvancedFiltersDialog();
+            return;
+          }
+          setState(() {
+            _rangePreset = value;
+            _customRange = null;
+          });
+        },
+      ),
+    );
+  }
+
+  // ── Lista raggruppata per giorno ───────────────────────────────────────
+  Widget _buildGroupedList() {
     final calendarioAsync = ref.watch(calendarioProvider);
     final mediciAsync = ref.watch(mediciProvider);
-    final filtroTesto = ref.watch(filtroRicercaConcordatiProvider);
-    final zoneSelezionate = ref.watch(zoneSelezionateConcordatiProvider);
-    final dateRange = ref.watch(dateRangeConcordatiProvider);
+    final specialMap = ref.watch(specializzazioneByIdProvider);
     final fasceAsync = ref.watch(fasceOrarieProvider);
+    final zoneAsync = ref.watch(zoneProvider);
 
     return calendarioAsync.when(
       data: (appuntamenti) {
-        var concordati = appuntamenti
-            .where((a) => a.stato == StatoCalendario.concordato)
-            .toList();
-
-        // Costruisci un map medicoId -> zonaId della fascia principale
-        final fasce = fasceAsync.asData?.value ?? [];
-        final zonaPerMedico = <String, String>{};
-        for (final fascia in fasce.where((f) => f.nr == 0)) {
-          zonaPerMedico[fascia.idMedico] = fascia.zonaId;
+        final filtrati = _filter(appuntamenti);
+        if (filtrati.isEmpty) {
+          return _emptyState();
         }
 
-        // Applica filtro testuale su medico
-        if (filtroTesto.isNotEmpty) {
-          final medicoMap = ref.read(medicoByIdProvider);
-          concordati = concordati.where((a) {
-            final medico = medicoMap[a.medicoId];
-            return medico?.nomeCompleto.toLowerCase().contains(filtroTesto.toLowerCase()) ?? false;
-          }).toList();
-        }
+        // Ordina per data crescente
+        final ordinati = List<CalendarioAppuntamento>.from(filtrati)
+          ..sort((a, b) => a.data.compareTo(b.data));
 
-        // Applica filtro zones
-        if (zoneSelezionate.isNotEmpty) {
-          concordati = concordati.where((a) {
-            return zoneSelezionate.contains(zonaPerMedico[a.medicoId]);
-          }).toList();
+        // Raggruppa per giorno
+        final gruppi = <DateTime, List<CalendarioAppuntamento>>{};
+        for (final app in ordinati) {
+          final key = app.soloData;
+          gruppi.putIfAbsent(key, () => []).add(app);
         }
-
-        // Applica filtro date
-        if (dateRange != null) {
-          concordati = concordati.where((a) {
-            final appData = a.soloData;
-            return (appData.isAtSameMomentAs(dateRange.$1) || appData.isAfter(dateRange.$1)) &&
-                (appData.isAtSameMomentAs(dateRange.$2) || appData.isBefore(dateRange.$2));
-          }).toList();
-        }
-
-        if (concordati.isEmpty) {
-          return Center(
-            child: Text(
-              'Nessun appuntamento concordato',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey,
-                  ),
-            ),
-          );
-        }
+        final chiaviGiorni = gruppi.keys.toList()..sort();
 
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: concordati.length,
-          itemBuilder: (context, index) {
-            final app = concordati[index];
-            return mediciAsync.when(
-              data: (medici) {
-                final medico = medici.where((m) => m.id == app.medicoId).firstOrNull;
-                return buildAppuntamentoTile(context, app, medico);
-              },
-              loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+          padding: const EdgeInsets.only(bottom: 96),
+          itemCount: chiaviGiorni.length,
+          itemBuilder: (context, i) {
+            final giorno = chiaviGiorni[i];
+            final apps = gruppi[giorno]!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _DateHeader(date: giorno, count: apps.length),
+                ...apps.map((app) {
+                  final medico = mediciAsync.valueOrNull
+                      ?.where((m) => m.id == app.medicoId)
+                      .firstOrNull;
+                  return _AppuntamentoCard(
+                    app: app,
+                    medico: medico,
+                    specializzazione: medico != null ? specialMap[medico.specializzazioneId] : null,
+                    fasce: fasceAsync.asData?.value ?? const [],
+                    zone: zoneAsync.asData?.value ?? const [],
+                    onTap: () {
+                      if (medico != null) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => AppuntamentoEditScreen(
+                              medico: medico,
+                              appuntamento: app,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    onDelete: () => _deleteAppuntamento(app),
+                  );
+                }),
+              ],
             );
           },
         );
@@ -303,234 +242,361 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
     );
   }
 
-  Widget buildAppuntamentoTile(
-    BuildContext context,
-    CalendarioAppuntamento app,
-    Medico? medico,
-  ) {
-    final zoneAsync = ref.watch(zoneProvider);
-
-    // Prendi la zona dalla fascia principale del medico
-    final fasceAsync = ref.watch(fasceOrarieProvider);
-    final fasce = fasceAsync.asData?.value ?? [];
-    final fasciaPrincipale = fasce.where((f) => f.idMedico == app.medicoId && f.nr == 0).firstOrNull;
-
-    final zona = zoneAsync.when(
-      data: (zone) => fasciaPrincipale != null ? zone.where((z) => z.id == fasciaPrincipale.zonaId).firstOrNull : null,
-      loading: () => null,
-      error: (_, __) => null,
-    );
-
-    // Conta appuntamenti con lo stesso stato per lo stesso giorno
-    final calendario = ref.watch(calendarioProvider).valueOrNull ?? [];
-    final stessoGiorno = calendario.where((a) => a.soloData.isAtSameMomentAs(app.soloData));
-    final concordatiCount = stessoGiorno.where((a) => a.stato == StatoCalendario.concordato).length;
-    final propostiCount = stessoGiorno.where((a) => a.stato == StatoCalendario.proposto).length;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: () {
-          if (medico != null) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => AppuntamentoEditScreen(
-                  medico: medico,
-                  appuntamento: app,
-                ),
-              ),
-            );
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    medico?.nomeCompleto ?? 'Medico sconosciuto',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    app.soloData.formatItalia(),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    app.oraFormattata,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  if (zona != null) ...[
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: zona.colore,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(zona.nome, style: Theme.of(context).textTheme.bodySmall),
-                  ],
-                  const Spacer(),
-                  if (concordatiCount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.teal.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '$concordatiCount',
-                        style: TextStyle(
-                          color: Colors.teal.shade700,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  if (concordatiCount > 0 && propostiCount > 0) const SizedBox(width: 4),
-                  if (propostiCount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.indigo.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '$propostiCount',
-                        style: TextStyle(
-                          color: Colors.indigo.shade700,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
+  Widget _emptyState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.event_busy_rounded,
+            size: 64,
+            color: Colors.grey.shade400,
           ),
-        ),
+          const SizedBox(height: 12),
+          Text(
+            'Nessun appuntamento trovato',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+          ),
+          if (_searchQuery.isNotEmpty || _statoFilter != null || _rangePreset != _DateRangePreset.all) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Prova a modificare i filtri',
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _searchController.clear();
+                  _searchQuery = '';
+                  _statoFilter = StatoCalendario.concordato;
+                  _rangePreset = _DateRangePreset.all;
+                  _customRange = null;
+                });
+              },
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Reset filtri'),
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  void showAddDialog() {
+  // ── Filtri ─────────────────────────────────────────────────────────────
+  List<CalendarioAppuntamento> _filter(List<CalendarioAppuntamento> tutti) {
+    Iterable<CalendarioAppuntamento> result = tutti;
+
+    // Filtro stato (default: concordato)
+    final stato = _statoFilter ?? StatoCalendario.concordato;
+    result = result.where((a) => a.stato == stato);
+
+    // Filtro range rapido
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final (DateTime start, DateTime end) = switch (_rangePreset) {
+      _DateRangePreset.all => (
+          DateTime(2000),
+          DateTime(2100),
+        ),
+      _DateRangePreset.today => (today, today),
+      _DateRangePreset.week => (
+          today.subtract(const Duration(days: 7)),
+          today.add(const Duration(days: 7)),
+        ),
+      _DateRangePreset.month => (
+          DateTime(today.year, today.month, 1),
+          DateTime(today.year, today.month + 1, 0),
+        ),
+      _DateRangePreset.custom => _customRange ?? (DateTime(2000), DateTime(2100)),
+    };
+    result = result.where((a) {
+      final d = a.soloData;
+      return !d.isBefore(start) && !d.isAfter(end);
+    });
+
+    // Filtro ricerca testo
+    if (_searchQuery.isNotEmpty) {
+      final medici = ref.read(mediciProvider).valueOrNull ?? [];
+      final fasce = ref.read(fasceOrarieProvider).asData?.value ?? const [];
+      result = result.where((app) {
+        final medico = medici.where((m) => m.id == app.medicoId).firstOrNull;
+        final fascia = app.fasciaOrariaId != null
+            ? fasce.where((f) => f.id == app.fasciaOrariaId).firstOrNull
+            : null;
+        final haystack = [
+          medico?.nome ?? '',
+          fascia?.struttura ?? '',
+          fascia?.indirizzo ?? '',
+          app.note ?? '',
+        ].join(' ').toLowerCase();
+        return haystack.contains(_searchQuery);
+      });
+    }
+
+    return result.toList();
+  }
+
+  Future<void> _deleteAppuntamento(CalendarioAppuntamento app) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Elimina appuntamento'),
+        content: Text('Eliminare l\'appuntamento del ${app.soloData.formatItalia()} alle ${app.oraFormattata}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annulla'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Elimina'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await ref.read(eliminaAppuntamentoProvider)(app.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Appuntamento eliminato')),
+        );
+      }
+    }
+  }
+
+  // ── Dialog filtri avanzati (range personalizzato) ──────────────────────
+  Future<void> _showAdvancedFiltersDialog() async {
+    DateTime? startDate = _customRange?.$1;
+    DateTime? endDate = _customRange?.$2;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Filtri avanzati'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Range date personalizzato',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _DateField(
+                          label: 'Da',
+                          value: startDate,
+                          onPick: (picked) => setStateDialog(() => startDate = picked),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _DateField(
+                          label: 'A',
+                          value: endDate,
+                          onPick: (picked) => setStateDialog(() => endDate = picked),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _customRange = null;
+                      _rangePreset = _DateRangePreset.all;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Reset'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Annulla'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    setState(() {
+                      if (startDate != null && endDate != null) {
+                        _customRange = (startDate!, endDate!);
+                        _rangePreset = _DateRangePreset.custom;
+                      } else {
+                        _customRange = null;
+                        _rangePreset = _DateRangePreset.all;
+                      }
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Applica'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ── Dialog nuovo appuntamento ──────────────────────────────────────────
+  Future<void> _showAddDialog() async {
     final mediciAsync = ref.read(mediciProvider);
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        String? selectedMedicoId;
-        DateTime? selectedDate;
-        TimeOfDay? selectedTime;
+    String? selectedMedicoId;
+    String? selectedFasciaId;
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
+    Medico? selectedMedico;
 
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (ctx, setStateDialog) {
+            final fasceAsync = selectedMedicoId != null
+                ? ref.watch(fasceOrarieMedicoProvider(selectedMedicoId!))
+                : const AsyncData(<FasciaOraria>[]);
+
             return AlertDialog(
-              title: const Text('Nuovo Appuntamento'),
-              content: SizedBox(
-                width: double.maxFinite,
+              title: const Text('Nuovo appuntamento'),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480, maxHeight: 520),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Ricerca medico
+                      // ── Selezione medico
                       mediciAsync.when(
-                        data: (medici) {
-                          return SearchAnchor(
-                            builder: (context, controller) => TextField(
-                              decoration: InputDecoration(
-                                labelText: 'Cerca medico',
-                                prefixIcon: const Icon(Icons.search),
-                                hintText: 'Nome medico...',
-                                isDense: true,
-                              ),
-                              onChanged: (value) {
-                                controller.openView();
-                              },
-                              onTap: () {
-                                controller.openView();
-                              },
-                              onSubmitted: (value) {
-                                controller.closeView(value);
-                              },
-                            ),
-                            suggestionsBuilder: (context, controller) {
-                              final query = controller.text.toLowerCase();
-                              final filtered = query.isEmpty
-                                  ? medici
-                                  : medici.where((m) => m.nomeCompleto.toLowerCase().contains(query)).toList();
-
-                              return filtered.map((medico) => ListTile(
-                                    title: Text(medico.nomeCompleto),
-                                    onTap: () {
-                                      setState(() {
-                                        selectedMedicoId = medico.id;
-                                      });
-                                      controller.closeView(medico.nomeCompleto);
-                                    },
-                                  ));
-                            },
-                          );
-                        },
-                        loading: () => const LinearProgressIndicator(),
-                        error: (_, __) => const SizedBox.shrink(),
-                      ),
-                      const SizedBox(height: 16),
-                      // Data
-                      InkWell(
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: selectedDate ?? DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-                          );
-                          if (picked != null) {
-                            setState(() => selectedDate = picked);
-                          }
-                        },
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Data',
-                            suffixIcon: Icon(Icons.calendar_today),
-                          ),
-                          child: Text(selectedDate?.formatItalia() ?? 'Seleziona data'),
+                        data: (medici) => _MedicoPicker(
+                          selected: selectedMedico,
+                          medici: medici,
+                          onPick: (m) => setStateDialog(() {
+                            selectedMedico = m;
+                            selectedMedicoId = m.id;
+                            selectedFasciaId = null;
+                          }),
+                          onClear: () => setStateDialog(() {
+                            selectedMedico = null;
+                            selectedMedicoId = null;
+                            selectedFasciaId = null;
+                          }),
                         ),
+                        loading: () => const LinearProgressIndicator(),
+                        error: (_, _) => const Text('Errore caricamento medici'),
                       ),
-                      const SizedBox(height: 12),
-                      // Orario
+
+                      const SizedBox(height: 16),
+
+                      // ── Selezione fascia (obbligatoria)
+                      if (selectedMedicoId != null) ...[
+                        fasceAsync.when(
+                          data: (fasce) {
+                            if (fasce.isEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Text(
+                                  'Nessuna fascia oraria per questo medico. Aggiungi almeno una fascia nell\'anagrafica del medico.',
+                                  style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                                ),
+                              );
+                            }
+                            return DropdownButtonFormField<String>(
+                              initialValue: selectedFasciaId,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Fascia oraria *',
+                                helperText: 'Obbligatoria: serve per identificare struttura e indirizzo',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.schedule_rounded),
+                              ),
+                              items: fasce
+                                  .map((f) => DropdownMenuItem<String>(
+                                        value: f.id,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              '${f.inizio.formatTime()} – ${f.fine.formatTime()}${f.nr == 0 ? " (principale)" : ""}',
+                                              style: const TextStyle(fontWeight: FontWeight.w600),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            if ((f.struttura != null && f.struttura!.isNotEmpty) ||
+                                                (f.indirizzo != null && f.indirizzo!.isNotEmpty))
+                                              Padding(
+                                                padding: const EdgeInsets.only(top: 2),
+                                                child: Text(
+                                                  [
+                                                    if (f.struttura != null && f.struttura!.isNotEmpty) f.struttura!,
+                                                    if (f.indirizzo != null && f.indirizzo!.isNotEmpty) f.indirizzo!,
+                                                  ].join(' — '),
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey.shade700,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ))
+                                  .toList(),
+                              onChanged: (v) => setStateDialog(() => selectedFasciaId = v),
+                              validator: (v) => v == null
+                                  ? 'Seleziona la fascia oraria (struttura/indirizzo)'
+                                  : null,
+                            );
+                          },
+                          loading: () => const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: LinearProgressIndicator(),
+                          ),
+                          error: (_, _) => const SizedBox.shrink(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // ── Data
+                      _DateField(
+                        label: 'Data',
+                        value: selectedDate,
+                        onPick: (picked) => setStateDialog(() => selectedDate = picked),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // ── Orario
                       InkWell(
                         onTap: () async {
                           final picked = await showTimePicker(
-                            context: context,
+                            context: ctx,
                             initialTime: selectedTime ?? const TimeOfDay(hour: 9, minute: 0),
                           );
                           if (picked != null) {
-                            setState(() => selectedTime = picked);
+                            setStateDialog(() => selectedTime = picked);
                           }
                         },
+                        borderRadius: BorderRadius.circular(8),
                         child: InputDecorator(
                           decoration: const InputDecoration(
                             labelText: 'Orario',
-                            suffixIcon: Icon(Icons.access_time),
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.access_time_rounded),
                           ),
-                          child: Text(selectedTime?.formatTime() ?? 'Seleziona ora'),
+                          child: Text(selectedTime?.formatTime() ?? 'Seleziona'),
                         ),
                       ),
                     ],
@@ -539,47 +605,65 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(ctx),
                   child: const Text('Annulla'),
                 ),
-                TextButton(
+                FilledButton.icon(
+                  icon: const Icon(Icons.check_rounded),
+                  label: const Text('Salva'),
                   onPressed: () async {
-                    if (selectedMedicoId != null && selectedDate != null) {
-                      final medici = mediciAsync.valueOrNull ?? [];
-                      final medico = medici.where((m) => m.id == selectedMedicoId).firstOrNull;
-
-                      if (medico != null) {
-                        final dateTime = DateTime(
-                          selectedDate!.year,
-                          selectedDate!.month,
-                          selectedDate!.day,
-                          selectedTime?.hour ?? 9,
-                          selectedTime?.minute ?? 0,
-                        );
-
-                        await ref.read(salvaAppuntamentoProvider)(
-                          CalendarioAppuntamento(
-                            id: const Uuid().v4(),
-                            medicoId: medico.id,
-                            data: dateTime,
-                            stato: StatoCalendario.concordato,
-                            dataCreazione: DateTime.now(),
-                          ),
-                        );
-                        ref.refresh(calendarioProvider);
-
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Appuntamento aggiunto')),
-                          );
-                        }
-                      }
+                    if (selectedMedico == null || selectedDate == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Seleziona medico e data')),
+                      );
+                      return;
                     }
-                    if (context.mounted) {
-                      Navigator.pop(context);
+                    if (selectedFasciaId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Seleziona la fascia oraria: è obbligatoria per identificare struttura e indirizzo'),
+                        ),
+                      );
+                      return;
+                    }
+                    final dateTime = DateTime(
+                      selectedDate!.year,
+                      selectedDate!.month,
+                      selectedDate!.day,
+                      selectedTime?.hour ?? 9,
+                      selectedTime?.minute ?? 0,
+                    );
+                    // Recupero la fascia selezionata per derivare anche il numero progressivo (backward compat)
+                    final fasceMedico = ref.read(fasceOrarieMedicoProvider(selectedMedico!.id)).valueOrNull ?? [];
+                    final fasciaSelezionata = fasceMedico.firstWhere(
+                      (f) => f.id == selectedFasciaId,
+                      orElse: () => fasceMedico.isNotEmpty ? fasceMedico.first : const FasciaOraria(
+                        idMedico: '',
+                        nr: 0,
+                        minutiInizio: 0,
+                        minutiFine: 0,
+                        distrettoId: 0,
+                        zonaId: '',
+                      ),
+                    );
+                    await ref.read(salvaAppuntamentoProvider)(
+                      CalendarioAppuntamento(
+                        id: const Uuid().v4(),
+                        medicoId: selectedMedico!.id,
+                        data: dateTime,
+                        stato: StatoCalendario.concordato,
+                        dataCreazione: DateTime.now(),
+                        fasciaOrariaId: selectedFasciaId, // <-- ID della fascia salvato
+                        fasciaNumero: fasciaSelezionata.nr == 0 ? null : fasciaSelezionata.nr,
+                      ),
+                    );
+                    if (ctx.mounted) {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(content: Text('Appuntamento aggiunto')),
+                      );
                     }
                   },
-                  child: const Text('Salva'),
                 ),
               ],
             );
@@ -590,11 +674,426 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
   }
 }
 
-/// Provider per filtrare gli appuntamenti concordati per ricerca testuale.
-final filtroRicercaConcordatiProvider = StateProvider<String>((ref) => '');
+// ────────────────────────────────────────────────────────────────────────────
+// Helpers riusabili
+// ────────────────────────────────────────────────────────────────────────────
 
-/// Provider per le zone selezionate nel filtro.
-final zoneSelezionateConcordatiProvider = StateProvider<List<String>>((ref) => []);
+enum _DateRangePreset { all, today, week, month, custom }
 
-/// Provider per il range date.
-final dateRangeConcordatiProvider = StateProvider<(DateTime, DateTime)?>((ref) => null);
+class _DateHeader extends StatelessWidget {
+  final DateTime date;
+  final int count;
+
+  const _DateHeader({required this.date, required this.count});
+
+  String get _label {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final tomorrow = today.add(const Duration(days: 1));
+    if (date.isAtSameMomentAs(today)) return 'Oggi';
+    if (date.isAtSameMomentAs(yesterday)) return 'Ieri';
+    if (date.isAtSameMomentAs(tomorrow)) return 'Domani';
+    return '${_giornoSettimanaLabel(date.weekday)}, ${date.formatItalia()}';
+  }
+
+  static String _giornoSettimanaLabel(int weekday) {
+    return switch (weekday) {
+      DateTime.monday => 'Lunedì',
+      DateTime.tuesday => 'Martedì',
+      DateTime.wednesday => 'Mercoledì',
+      DateTime.thursday => 'Giovedì',
+      DateTime.friday => 'Venerdì',
+      DateTime.saturday => 'Sabato',
+      DateTime.sunday => 'Domenica',
+      _ => '',
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 18,
+            decoration: BoxDecoration(
+              color: cs.primary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            _label,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface,
+                ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: cs.primaryContainer,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                color: cs.onPrimaryContainer,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppuntamentoCard extends StatelessWidget {
+  final CalendarioAppuntamento app;
+  final Medico? medico;
+  final Specializzazione? specializzazione;
+  final List<FasciaOraria> fasce;
+  final List<Zona> zone;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  const _AppuntamentoCard({
+    required this.app,
+    required this.medico,
+    required this.specializzazione,
+    required this.fasce,
+    required this.zone,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final fascia = app.fasciaOrariaId != null
+        ? fasce.where((f) => f.id == app.fasciaOrariaId).firstOrNull
+        : null;
+    final spec = specializzazione;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      child: Dismissible(
+        key: ValueKey('app-${app.id}'),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 24),
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(Icons.delete_rounded, color: Colors.red.shade700),
+        ),
+        confirmDismiss: (_) async {
+          onDelete();
+          return false; // la cancellazione effettiva è gestita dalla conferma
+        },
+        child: Card(
+          margin: EdgeInsets.zero,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: cs.outlineVariant),
+          ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Orario in primo piano a sinistra
+                  Container(
+                    width: 64,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          app.oraFormattata,
+                          style: TextStyle(
+                            color: cs.onPrimaryContainer,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+
+                  // Contenuto principale
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            if (spec != null) ...[
+                              Icon(
+                                spec.iconaSpecializzazione,
+                                size: 16,
+                                color: cs.primary,
+                              ),
+                              const SizedBox(width: 6),
+                            ],
+                            Expanded(
+                              child: Text(
+                                medico?.nomeCompleto ?? 'Medico sconosciuto',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (spec != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            spec.nome,
+                            style: TextStyle(
+                              color: cs.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                        if (fascia?.struttura != null && fascia!.struttura!.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(Icons.business_rounded, size: 14, color: cs.onSurfaceVariant),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  fascia.struttura!,
+                                  style: TextStyle(
+                                    color: cs.onSurfaceVariant,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (fascia?.indirizzo != null && fascia!.indirizzo!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(Icons.place_rounded, size: 14, color: cs.onSurfaceVariant),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  fascia.indirizzo!,
+                                  style: TextStyle(
+                                    color: cs.onSurfaceVariant,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  final String label;
+  final DateTime? value;
+  final ValueChanged<DateTime> onPick;
+
+  const _DateField({
+    required this.label,
+    required this.value,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: value ?? DateTime.now(),
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+        );
+        if (picked != null) onPick(picked);
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.calendar_today_rounded),
+          suffixIcon: value != null
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () => onPick(DateTime(0)),
+                )
+              : const Icon(Icons.arrow_drop_down_rounded),
+        ),
+        child: Text(
+          (value == null || value!.year < 1900) ? 'Seleziona' : value!.formatItalia(),
+        ),
+      ),
+    );
+  }
+}
+
+class _MedicoPicker extends StatefulWidget {
+  final Medico? selected;
+  final List<Medico> medici;
+  final ValueChanged<Medico> onPick;
+  final VoidCallback onClear;
+
+  const _MedicoPicker({
+    required this.selected,
+    required this.medici,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  @override
+  State<_MedicoPicker> createState() => _MedicoPickerState();
+}
+
+class _MedicoPickerState extends State<_MedicoPicker> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _openPicker(BuildContext context) async {
+    final picked = await showDialog<Medico>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setStateDialog) {
+            final filtered = _query.isEmpty
+                ? widget.medici
+                : widget.medici
+                    .where((m) => m.nomeCompleto.toLowerCase().contains(_query.toLowerCase()))
+                    .toList();
+            return AlertDialog(
+              title: const Text('Seleziona medico'),
+              content: SizedBox(
+                width: 360,
+                height: 480,
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _searchCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'Cerca...',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        filled: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      onChanged: (v) => setStateDialog(() => _query = v),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? const Center(child: Text('Nessun medico'))
+                          : ListView.builder(
+                              itemCount: filtered.length,
+                              itemBuilder: (_, i) {
+                                final m = filtered[i];
+                                return ListTile(
+                                  leading: const CircleAvatar(
+                                    child: Icon(Icons.person_rounded, size: 18),
+                                  ),
+                                  title: Text(m.nomeCompleto),
+                                  onTap: () => Navigator.pop(ctx, m),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Chiudi'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (picked != null) widget.onPick(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: () => _openPicker(context),
+      borderRadius: BorderRadius.circular(8),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Medico',
+          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.person_search_rounded),
+          suffixIcon: widget.selected != null
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: widget.onClear,
+                )
+              : const Icon(Icons.arrow_drop_down_rounded),
+        ),
+        child: Text(
+          widget.selected?.nomeCompleto ?? 'Seleziona medico',
+          style: TextStyle(
+            color: widget.selected != null ? cs.onSurface : cs.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}

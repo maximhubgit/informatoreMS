@@ -9,18 +9,29 @@ class FirebaseFasciaOrariaRepository implements FasciaOrariaRepository {
 
   @override
   Future<List<FasciaOraria>> getByMedicoId(String medicoId) async {
-    final snapshot = await _db
-        .collection(_collection)
-        .where('idMedico', isEqualTo: medicoId)
-        .where('deleted', isEqualTo: false)
-        .orderBy('nr')
-        .get();
-    return snapshot.docs.map((doc) {
-      final data = doc.data();
-      final dataWithId = Map<String, dynamic>.from(data);
-      dataWithId['id'] = doc.id;
-      return FasciaOraria.fromJson(dataWithId);
-    }).toList();
+    try {
+      // Prima prova senza orderBy (per testare se è l'indice il problema)
+      Query query = _db.collection(_collection).where('idMedico', isEqualTo: medicoId);
+
+      final snapshot = await query.get();
+      final fasce = snapshot.docs
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final dataWithId = Map<String, dynamic>.from(data);
+            dataWithId['id'] = doc.id;
+            return FasciaOraria.fromJson(dataWithId);
+          })
+          .where((fascia) => !fascia.deleted) // Filtro soft-delete a livello applicativo
+          .toList();
+
+      // Ordina in memoria
+      fasce.sort((a, b) => a.nr.compareTo(b.nr));
+      return fasce;
+    } catch (e) {
+      // Log dell'errore per debug
+      print('ERRORE getByMedicoId: $e');
+      rethrow;
+    }
   }
 
   @override

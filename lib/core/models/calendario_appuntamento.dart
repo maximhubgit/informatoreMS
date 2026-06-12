@@ -41,7 +41,8 @@ class CalendarioAppuntamento extends Equatable {
   final String? note;
   final StatoCalendario stato;
   final DateTime? dataCreazione;
-  final int? fasciaNumero; // Numero progressivo della fascia oraria scelta (opzionale)
+  final int? fasciaNumero; // Numero progressivo della fascia oraria scelta (opzionale, backward compat)
+  final String? fasciaOrariaId; // Reference alla fascia oraria specifica (opzionale)
 
   const CalendarioAppuntamento({
     required this.id,
@@ -51,6 +52,7 @@ class CalendarioAppuntamento extends Equatable {
     this.stato = StatoCalendario.proposto,
     this.dataCreazione,
     this.fasciaNumero,
+    this.fasciaOrariaId,
   });
 
   // Estrae solo la data senza orario
@@ -67,6 +69,7 @@ class CalendarioAppuntamento extends Equatable {
     StatoCalendario? stato,
     DateTime? dataCreazione,
     int? fasciaNumero,
+    String? fasciaOrariaId,
   }) {
     return CalendarioAppuntamento(
       id: id ?? this.id,
@@ -76,6 +79,7 @@ class CalendarioAppuntamento extends Equatable {
       stato: stato ?? this.stato,
       dataCreazione: dataCreazione ?? this.dataCreazione,
       fasciaNumero: fasciaNumero ?? this.fasciaNumero,
+      fasciaOrariaId: fasciaOrariaId ?? this.fasciaOrariaId,
     );
   }
 
@@ -88,6 +92,7 @@ class CalendarioAppuntamento extends Equatable {
       'stato': stato.name,
       'dataCreazione': dataCreazione?.toIso8601String(),
       'fasciaNumero': fasciaNumero,
+      'fasciaOrariaId': fasciaOrariaId,
     };
   }
 
@@ -102,9 +107,10 @@ class CalendarioAppuntamento extends Equatable {
           ? DateTime.parse(json['dataCreazione'] as String)
           : null,
       fasciaNumero: (json['fasciaNumero'] as num?)?.toInt(),
+      fasciaOrariaId: json['fasciaOrariaId'] as String?,
     );
   }
 
   @override
-  List<Object?> get props => [id, medicoId, data, note, stato, dataCreazione, fasciaNumero];
+  List<Object?> get props => [id, medicoId, data, note, stato, dataCreazione, fasciaNumero, fasciaOrariaId];
 }

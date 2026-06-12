@@ -163,13 +163,20 @@ class _CalendarioMeseScreenState extends ConsumerState<CalendarioMeseScreen> {
                           final app = appuntamentiGiorno[index];
                           final medicoMap = ref.watch(medicoByIdProvider);
                           final specialMap = ref.watch(specializzazioneByIdProvider);
+                          final fasciaMap = ref.watch(fasciaByIdProvider);
                           final medico = medicoMap[app.medicoId];
                           final specializzazione = specialMap[medico?.specializzazioneId];
+                          // Recupera struttura/indirizzo dalla fascia dell'appuntamento
+                          final fascia = app.fasciaOrariaId != null
+                              ? fasciaMap[app.fasciaOrariaId]
+                              : null;
 
                           return AppuntamentoCard(
                             appuntamento: app,
                             nomeMedico: medico?.nomeCompleto,
                             specializzazione: specializzazione?.nome,
+                            struttura: fascia?.struttura,
+                            indirizzo: fascia?.indirizzo,
                             onMarkDone: () => _markDone(ref, app),
                             onMarkCancelled: () => _markCancelled(ref, app),
                             onMove: () => _showMoveDialog(context, ref, app),
@@ -405,30 +412,101 @@ class _CalendarioMeseScreenState extends ConsumerState<CalendarioMeseScreen> {
       context: context,
       builder: (context) {
         TimeOfDay? oraSelezionata;
+        String? selectedFasciaId;
+
+        final fasceAsync = ref.watch(fasceOrarieMedicoProvider(medico.id));
 
         return StatefulBuilder(
           builder: (context, setStateDialog) => AlertDialog(
             title: Text('Aggiungi ${medico.nomeCompleto}'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.calendar_today),
-                  title: Text(_selectedDay?.formatItalia() ?? ''),
-                  subtitle: const Text('Data selezionata'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.access_time),
-                  title: Text(oraSelezionata?.formatTime() ?? 'Seleziona ora'),
-                  onTap: () async {
-                    final time = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay.now(),
-                    );
-                    if (time != null) setStateDialog(() => oraSelezionata = time);
-                  },
-                ),
-              ],
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.calendar_today),
+                    title: Text(_selectedDay?.formatItalia() ?? ''),
+                    subtitle: const Text('Data selezionata'),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.access_time),
+                    title: Text(oraSelezionata?.formatTime() ?? 'Seleziona ora'),
+                    onTap: () async {
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (time != null) setStateDialog(() => oraSelezionata = time);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  // Selezione fascia oraria (obbligatoria)
+                  fasceAsync.when(
+                    data: (fasce) {
+                      if (fasce.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            'Nessuna fascia oraria per questo medico. Aggiungi una fascia nell\'anagrafica del medico.',
+                            style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                          ),
+                        );
+                      }
+                      return DropdownButtonFormField<String>(
+                        initialValue: selectedFasciaId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Fascia oraria *',
+                          helperText: 'Obbligatoria: indica struttura e indirizzo',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.schedule_rounded),
+                        ),
+                        items: fasce.map((f) {
+                          final hasInfo = (f.struttura != null && f.struttura!.isNotEmpty) ||
+                              (f.indirizzo != null && f.indirizzo!.isNotEmpty);
+                          return DropdownMenuItem<String>(
+                            value: f.id,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${f.inizio.formatTime()} – ${f.fine.formatTime()}${f.nr == 0 ? " (principale)" : ""}',
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (hasInfo)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: Text(
+                                      [
+                                        if (f.struttura != null && f.struttura!.isNotEmpty) f.struttura!,
+                                        if (f.indirizzo != null && f.indirizzo!.isNotEmpty) f.indirizzo!,
+                                      ].join(' — '),
+                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (v) => setStateDialog(() => selectedFasciaId = v),
+                        validator: (v) => v == null ? 'Seleziona la fascia oraria' : null,
+                      );
+                    },
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: LinearProgressIndicator(),
+                    ),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -436,7 +514,7 @@ class _CalendarioMeseScreenState extends ConsumerState<CalendarioMeseScreen> {
                 child: const Text('Annulla'),
               ),
               TextButton(
-                onPressed: oraSelezionata == null || _selectedDay == null
+                onPressed: oraSelezionata == null || _selectedDay == null || selectedFasciaId == null
                     ? null
                     : () {
                         final nuovaData = DateTime(
@@ -446,11 +524,21 @@ class _CalendarioMeseScreenState extends ConsumerState<CalendarioMeseScreen> {
                           oraSelezionata!.hour,
                           oraSelezionata!.minute,
                         );
+                        // Recupero la fascia selezionata per salvare anche fasciaNumero
+                        final fasceMedico = fasceAsync.valueOrNull ?? [];
+                        final fasciaSelezionata = fasceMedico.firstWhere(
+                          (f) => f.id == selectedFasciaId,
+                          orElse: () => fasceMedico.isNotEmpty
+                              ? fasceMedico.first
+                              : throw StateError('Fascia non trovata'),
+                        );
                         final nuovoAppuntamento = CalendarioAppuntamento(
                           id: '',
                           medicoId: medico.id,
                           data: nuovaData,
                           stato: StatoCalendario.confermato,
+                          fasciaOrariaId: selectedFasciaId, // <-- ID della fascia salvato
+                          fasciaNumero: fasciaSelezionata.nr == 0 ? null : fasciaSelezionata.nr,
                         );
                         ref.read(salvaAppuntamentoProvider)(nuovoAppuntamento);
                         Navigator.of(context).pop();

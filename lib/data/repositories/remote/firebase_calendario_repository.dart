@@ -11,36 +11,20 @@ class FirebaseCalendarioRepository implements CalendarioRepository {
     final snapshot = await _db.collection('calendario_appuntamenti').get();
     return snapshot.docs.map((doc) {
       final data = doc.data();
-      return CalendarioAppuntamento(
-        id: doc.id,
-        medicoId: data['medicoId'] ?? '',
-        data: DateTime.parse(data['data'] ?? DateTime.now().toIso8601String()),
-        note: data['note'] as String?,
-        stato: () {
-      final statoStr = data['stato'] ?? 'proposto';
-      try {
-        return StatoCalendario.values.byName(statoStr);
-      } catch (_) {
-        // Se lo stato salvato non è valido, usa il valore di default
-        return StatoCalendario.proposto;
-      }
-    }(),
-        dataCreazione: data['dataCreazione'] != null
-            ? DateTime.parse(data['dataCreazione'])
-            : null,
-      );
+      // Inietto l'id del documento (Firestore doc id) nel payload letto
+      // perché CalendarioAppuntamento.fromJson lo richiede come campo `id`.
+      data['id'] = doc.id;
+      return CalendarioAppuntamento.fromJson(data);
     }).toList();
   }
 
   @override
   Future<void> save(CalendarioAppuntamento appuntamento) async {
-    await _db.collection('calendario_appuntamenti').doc(appuntamento.id).set({
-      'medicoId': appuntamento.medicoId,
-      'data': appuntamento.data.toIso8601String(),
-      'note': appuntamento.note,
-      'stato': appuntamento.stato.name,
-      'dataCreazione': appuntamento.dataCreazione?.toIso8601String(),
-    });
+    // Serializzo tramite toJson() del modello per non dimenticare campi
+    // (es. fasciaOrariaId, fasciaNumero). Rimuovo `id` perché è il doc id di Firestore.
+    final json = appuntamento.toJson();
+    json.remove('id');
+    await _db.collection('calendario_appuntamenti').doc(appuntamento.id).set(json);
   }
 
   @override

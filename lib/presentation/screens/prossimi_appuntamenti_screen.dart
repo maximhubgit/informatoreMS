@@ -123,7 +123,13 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
     WidgetRef ref,
   ) {
     final specialMap = ref.watch(specializzazioneByIdProvider);
+    final fasciaMap = ref.watch(fasciaByIdProvider);
     final specializzazione = medico != null ? specialMap[medico.specializzazioneId] : null;
+    // Recupera struttura/indirizzo dalla fascia dell'appuntamento
+    final fascia = app.fasciaOrariaId != null ? fasciaMap[app.fasciaOrariaId] : null;
+    final hasFasciaInfo = fascia != null &&
+        ((fascia.struttura != null && fascia.struttura!.isNotEmpty) ||
+            (fascia.indirizzo != null && fascia.indirizzo!.isNotEmpty));
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -164,21 +170,70 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
             ),
           ],
         ),
-        subtitle: Row(
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Text(
-                specializzazione?.nome ?? '',
-                style: const TextStyle(fontSize: 12),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    specializzazione?.nome ?? '',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${app.soloData.formatItalia()} ${app.oraFormattata}',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              '${app.soloData.formatItalia()} ${app.oraFormattata}',
-              style: const TextStyle(fontSize: 12),
-            ),
+            if (hasFasciaInfo) ...[
+              const SizedBox(height: 4),
+              if (fascia.struttura != null && fascia.struttura!.isNotEmpty)
+                Row(
+                  children: [
+                    Icon(Icons.business_rounded, size: 12, color: Colors.grey.shade700),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        fascia.struttura!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade800,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              if (fascia.indirizzo != null && fascia.indirizzo!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(
+                    children: [
+                      Icon(Icons.place_rounded, size: 12, color: Colors.grey.shade700),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          fascia.indirizzo!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ],
         ),
+        isThreeLine: hasFasciaInfo,
         trailing: Icon(
           app.stato == StatoCalendario.proposto
               ? Icons.add_circle_outline
@@ -205,6 +260,11 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
     Medico? medico,
     WidgetRef ref,
   ) {
+    final fasciaMap = ref.read(fasciaByIdProvider);
+    final fascia = app.fasciaOrariaId != null ? fasciaMap[app.fasciaOrariaId] : null;
+    final hasFasciaInfo = (fascia?.struttura != null && fascia!.struttura!.isNotEmpty) ||
+        (fascia?.indirizzo != null && fascia!.indirizzo!.isNotEmpty);
+
     showDialog(
       context: context,
       builder: (context) {
@@ -218,6 +278,41 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               Text('${medico?.nomeCompleto ?? 'Medico'}'),
               Text('Data: ${app.soloData.formatItalia()} alle ${app.oraFormattata}'),
+              if (hasFasciaInfo) ...[
+                if (fascia.struttura != null && fascia.struttura!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.business_rounded, size: 14, color: Colors.grey.shade700),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            fascia.struttura!,
+                            style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (fascia.indirizzo != null && fascia.indirizzo!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Row(
+                      children: [
+                        Icon(Icons.place_rounded, size: 14, color: Colors.grey.shade700),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            fascia.indirizzo!,
+                            style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+              const SizedBox(height: 8),
               Text('Stato: verrà impostato come "Confermato"'),
             ],
           ),
@@ -230,6 +325,8 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
               onPressed: () async {
                 Navigator.pop(context);
                 // Conferma l'appuntamento come "proposto" (non concordato)
+                // copyWith preserva fasciaOrariaId: l'appuntamento confermato
+                // mantiene il legame con la fascia (quindi indirizzo/struttura).
                 await ref.read(salvaAppuntamentoProvider)(
                   app.copyWith(stato: StatoCalendario.confermato),
                 );

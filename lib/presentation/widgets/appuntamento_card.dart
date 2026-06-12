@@ -6,6 +6,8 @@ class AppuntamentoCard extends StatelessWidget {
   final CalendarioAppuntamento appuntamento;
   final String? nomeMedico;
   final String? specializzazione;
+  final String? struttura;
+  final String? indirizzo;
   final VoidCallback onMarkDone;
   final VoidCallback onMarkCancelled;
   final VoidCallback onMove;
@@ -18,6 +20,8 @@ class AppuntamentoCard extends StatelessWidget {
     required this.appuntamento,
     this.nomeMedico,
     this.specializzazione,
+    this.struttura,
+    this.indirizzo,
     required this.onMarkDone,
     required this.onMarkCancelled,
     required this.onMove,
@@ -227,6 +231,50 @@ class AppuntamentoCard extends StatelessWidget {
                           color: Colors.grey.shade600,
                         ),
                       ),
+                      if ((struttura != null && struttura!.isNotEmpty) ||
+                          (indirizzo != null && indirizzo!.isNotEmpty)) ...[
+                        const SizedBox(height: 6),
+                        if (struttura != null && struttura!.isNotEmpty)
+                          Row(
+                            children: [
+                              Icon(Icons.business_rounded, size: 13, color: Colors.grey.shade700),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  struttura!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade800,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        if (indirizzo != null && indirizzo!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Row(
+                              children: [
+                                Icon(Icons.place_rounded, size: 13, color: Colors.grey.shade700),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    indirizzo!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ],
                   ),
                 ),

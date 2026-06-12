@@ -172,6 +172,17 @@ final fasceOrarieMedicoProvider = FutureProvider.family<List<FasciaOraria>, Stri
   return repo.getByMedicoId(medicoId);
 });
 
+/// Provider che mappa fasciaOrariaId -> FasciaOraria.
+/// Utile per recuperare struttura/indirizzo di un appuntamento in O(1).
+final fasciaByIdProvider = Provider<Map<String, FasciaOraria>>((ref) {
+  final fasceAsync = ref.watch(fasceOrarieProvider);
+  final fasce = fasceAsync.valueOrNull ?? const <FasciaOraria>[];
+  return {
+    for (final f in fasce)
+      if (f.id != null) f.id!: f,
+  };
+});
+
 /// Provider derivato: medici filtrati per le zone selezionate.
 /// Filtriamo in base alla zona della fascia principale (nr=0) del medico.
 final mediciFiltratiProvider = Provider<AsyncValue<List<Medico>>>((ref) {

@@ -164,6 +164,12 @@ class CalendarScheduler {
         if (slotResult != null) {
           final giorno = candidata.dateOnly;
           final fasciaIndice = slotResult.fasciaIndice; // 0-based index
+          // Trova la fascia utilizzata per ottenere l'ID
+          final fasciaUtilizzata = fasceMedico.firstWhere(
+              (f) => f.nr == slotResult.fasciaIndice + 1,
+              orElse: () => fasceMedico.first);
+          final durataVisita = fasciaUtilizzata.tempoVisitaMinuti ?? 30;
+
           result.add(CalendarioAppuntamento(
             id: _uuid.v4(),
             medicoId: medico.id,
@@ -171,12 +177,10 @@ class CalendarScheduler {
             stato: StatoCalendario.proposto,
             dataCreazione: DateTime.now(),
             fasciaNumero: fasciaIndice + 1, // Numero progressivo a partire da 1
+            fasciaOrariaId: fasciaUtilizzata.id, // ID della fascia oraria
           ));
-          // Usa tempoVisitaMinuti dalla fascia se specificato, altrimenti 30 di default
-      final fasciaUtilizzata = fasceMedico.firstWhere((f) => f.nr == slotResult!.fasciaIndice + 1, orElse: () => fasceMedico.first);
-      final durataVisita = fasciaUtilizzata.tempoVisitaMinuti ?? 30;
 
-      occupazione.putIfAbsent(giorno, () => []).add(_Slot(slotResult.orario, slotResult.orario + durataVisita));
+          occupazione.putIfAbsent(giorno, () => []).add(_Slot(slotResult.orario, slotResult.orario + durataVisita));
         } else {
           // Nessun slot disponibile per questa data (medico non riceve in questo giorno o tutti gli slot sono occupati)
           // Trova il prossimo giorno valido per il medico

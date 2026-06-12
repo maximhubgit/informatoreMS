@@ -30,8 +30,6 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
   late final TextEditingController _prodottiCtrl;
   late String? _selectedSpecializzazioneId;
   late List<FasciaOraria> _fasce;
-  DateTime? _dataProssimaVisita;
-  TimeOfDay? _oraProssimaVisita;
 
   @override
   void initState() {
@@ -60,16 +58,26 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
     final distrettiAsync = ref.watch(distrettoProvider);
 
     // Carica le fasce orarie del medico se in modifica
-    ref.watch(fasceOrarieMedicoProvider(widget.medico?.id ?? ''));
+    final medicoId = widget.medico?.id ?? '';
+    final fasceAsync = medicoId.isNotEmpty
+        ? ref.watch(fasceOrarieMedicoProvider(medicoId))
+        : const AsyncData(<FasciaOraria>[]);
 
-    // Aggiorna _fasce quando i dati arrivano
-    ref.listen(fasceOrarieMedicoProvider(widget.medico?.id ?? ''), (_, next) {
-      if (next.hasValue && mounted) {
-        setState(() {
-          _fasce = List<FasciaOraria>.from(next.valueOrNull ?? []);
-        });
-      }
-    });
+    // Aggiorna _fasce quando i dati arrivano (con post frame callback per evitare setState durante build)
+    if (fasceAsync.hasValue && _fasce.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _fasce = List<FasciaOraria>.from(fasceAsync.value!);
+          });
+        }
+      });
+    }
+
+    // Debug: log errori
+    if (fasceAsync.hasError) {
+      print('ERRORE fasceOrarieMedicoProvider: ${fasceAsync.error}');
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -161,8 +169,6 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
               controller: _prodottiCtrl,
               decoration: const InputDecoration(labelText: 'Prodotti'),
             ),
-            const SizedBox(height: 8),
-            _buildDataProssimaVisitaField(),
             const SizedBox(height: 16),
             _buildFasceSection(distrettiAsync),
             const SizedBox(height: 24),
@@ -182,85 +188,6 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildDataProssimaVisitaField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: InkWell(
-                onTap: _selezionaData,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Data concordata',
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
-                  child: Text(
-                    _dataProssimaVisita?.formatItalia() ?? 'Non prefissata',
-                    style: TextStyle(
-                      color: _dataProssimaVisita != null ? null : Colors.grey,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: InkWell(
-                onTap: _selezionaOra,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Ora',
-                    suffixIcon: Icon(Icons.access_time),
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  ),
-                  child: Text(
-                    _oraProssimaVisita?.formatTime() ?? 'Seleziona ora',
-                    style: TextStyle(
-                      color: _oraProssimaVisita != null ? null : Colors.grey,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'La data sarà inserita nel calendario con stato "Concordato"',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade600,
-                fontStyle: FontStyle.italic,
-              ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _selezionaData() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _dataProssimaVisita ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-    );
-    if (picked != null && mounted) {
-      setState(() => _dataProssimaVisita = picked);
-    }
-  }
-
-  Future<void> _selezionaOra() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _oraProssimaVisita ?? const TimeOfDay(hour: 9, minute: 0),
-    );
-    if (picked != null && mounted) {
-      setState(() => _oraProssimaVisita = picked);
-    }
   }
 
   Widget _buildFasceSection(AsyncValue<List<Distretto>> distrettiAsync) {
@@ -960,7 +887,6 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final medicoId = widget.medico?.id ?? const Uuid().v4();
-    String? calendarioAppuntamentoId;
 
     // Salviamo il medico (solo nome, specializzazione, periodicità, annotazioni, prodotti)
     final nuovoMedico = (widget.medico ?? Medico(
@@ -976,133 +902,21 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
       prodotti: _prodottiCtrl.text.isNotEmpty ? _prodottiCtrl.text : null,
     );
 
-    ref.read(salvaMedicoProvider)(nuovoMedico);
+    await ref.read(salvaMedicoProvider)(nuovoMedico);
 
     // Salviamo le fasce orarie nella collection separata
     for (final fascia in _fasce) {
       final fasciaConId = (fascia.id == null || fascia.id!.isEmpty)
           ? fascia.copyWith(id: const Uuid().v4(), idMedico: medicoId)
           : fascia.copyWith(idMedico: medicoId);
-      ref.read(salvaFasciaOrariaProvider)(fasciaConId);
+      await ref.read(salvaFasciaOrariaProvider)(fasciaConId);
     }
 
-    // Poi gestiamo l'appuntamento
-    if (_dataProssimaVisita != null) {
-      final dateTimeCompleta = DateTime(
-        _dataProssimaVisita!.year,
-        _dataProssimaVisita!.month,
-        _dataProssimaVisita!.day,
-        _oraProssimaVisita?.hour ?? 9,
-        _oraProssimaVisita?.minute ?? 0,
-      );
-
-      // Cerchiamo prima se esiste già un appuntamento NON CONCLUSO per questo medico
-      final appuntamenti = ref.read(calendarioProvider).valueOrNull ?? [];
-      final appEsistente = appuntamenti
-          .where((a) =>
-              a.medicoId == medicoId &&
-              !a.stato.isConcluso)
-          .firstOrNull;
-
-      if (appEsistente != null) {
-        // Esiste già un appuntamento per questo medico - lo aggiorniamo come concordato
-        calendarioAppuntamentoId = appEsistente.id;
-        ref.read(salvaAppuntamentoProvider)(appEsistente.copyWith(
-          data: dateTimeCompleta,
-          stato: StatoCalendario.concordato,
-          note: 'Aggiornato dall\'anagrafica medico',
-        ));
-      } else {
-        // Nessun appuntamento esistente, ne creiamo uno nuovo come CONCORDATO
-        final nuovoAppuntamento = CalendarioAppuntamento(
-          id: const Uuid().v4(),
-          medicoId: medicoId,
-          data: dateTimeCompleta,
-          stato: StatoCalendario.concordato,
-          note: 'Inserito dall\'anagrafica medico',
-          dataCreazione: DateTime.now(),
-        );
-        ref.read(salvaAppuntamentoProvider)(nuovoAppuntamento);
-        calendarioAppuntamentoId = nuovoAppuntamento.id;
-      }
-    }
-
-    // Verifica se esiste già una fascia principale (nr=0)
-    final haFasciaPrincipale = _fasce.any((f) => f.nr == 0);
-
-    // Aggiorniamo il medico con l'ID appuntamento (se necessario)
-    if (calendarioAppuntamentoId != null &&
-        (widget.medico?.calendarioAppuntamentoId == null ||
-         widget.medico?.calendarioAppuntamentoId != calendarioAppuntamentoId)) {
-      ref.read(salvaMedicoProvider)(nuovoMedico.copyWith(
-        calendarioAppuntamentoId: calendarioAppuntamentoId,
-      ));
-    }
-
-    // Se non c'è una fascia principale, chiedi all'utente di crearla
-    if (!haFasciaPrincipale && mounted) {
-      final conferma = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Fascia oraria mancante'),
-          content: const Text('Il medico non ha una fascia principale. Vuoi aggiungerne una?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('No, salva ugualmente'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Aggiungi fascia'),
-            ),
-          ],
-        ),
-      );
-
-      if (conferma == true && mounted) {
-        // Apri direttamente il dialog per aggiungere la fascia principale
-        final dettagli = await _selezionaDettagoCompletaPrimaFascia();
-        if (dettagli != null && mounted) {
-          final timeInizio = await showTimePicker(
-            context: context,
-            initialTime: const TimeOfDay(hour: 9, minute: 0),
-          );
-          if (timeInizio == null) {
-            // Nessun orario selezionato, chiudi lo stesso
-            _completaSalvataggio();
-            return;
-          }
-
-          final timeFine = await showTimePicker(
-            context: context,
-            initialTime: const TimeOfDay(hour: 12, minute: 0),
-          );
-          if (timeFine == null) {
-            _completaSalvataggio();
-            return;
-          }
-
-          final fascia = FasciaOraria(
-            id: const Uuid().v4(),
-            idMedico: medicoId,
-            nr: 0,
-            minutiInizio: timeInizio.hour * 60 + timeInizio.minute,
-            minutiFine: timeFine.hour * 60 + timeFine.minute,
-            distrettoId: dettagli['distrettoId'] as int,
-            zonaId: dettagli['zonaId'] as String,
-            struttura: dettagli['struttura'] as String?,
-            indirizzo: dettagli['indirizzo'] as String?,
-            tempoVisitaMinuti: dettagli['tempoVisitaMinuti'] as int?,
-          );
-          ref.read(salvaFasciaOrariaProvider)(fascia);
-        }
-      }
-    }
-
+    // Invalida il provider specifico del medico per ricaricare le fasce
+    ref.invalidate(fasceOrarieMedicoProvider(medicoId));
     _completaSalvataggio();
   }
 
-  /// Completa il salvataggio aggiornando i provider.
   void _completaSalvataggio() {
     ref.invalidate(mediciProvider);
     ref.invalidate(calendarioProvider);
