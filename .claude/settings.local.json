@@ -57,7 +57,12 @@
       "PowerShell(Copy-Item *)",
       "Bash(curl -sL \"https://raw.githubusercontent.com/.../fascia_oraria.dart\")",
       "PowerShell(Get-Content -Path \".\\\\lib\\\\presentation\\\\screens\\\\medico_edit_screen.dart\" | Select-String -Pattern \"zonaIdEstEs|strutturaEstEs|indirizzoEstEs|haDettagliEstEs|distrettoIdEstEs\" -AllMatches | ForEach-Object { $_.Matches.Value } | Get-Unique)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(git reset *)",
+      "Bash(git checkout *)",
+      "Bash(git restore *)",
+      "Bash(git commit -m 'Salva fasciaOrariaId in calendario: obbligatoria per concordati, mostrata in tutte le liste *)",
+      "Bash(git push *)"
     ]
   }
 }

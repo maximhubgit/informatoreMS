@@ -727,13 +727,19 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
   /// Modifica una fascia esistente.
   Future<void> _modificaFascia(int index) async {
     final fascia = _fasce[index];
-    // Trova la fascia principale se esiste (per il pulsante "richiama")
-    FasciaOraria? fasciaPrincipale;
-    try {
-      fasciaPrincipale = _fasce.firstWhere((f) => f.nr == 0);
-    } catch (_) {
-      fasciaPrincipale = null;
-    }
+
+    // Mostra prima i time picker per orario e minuti
+    final timeInizio = await showTimePicker(
+      context: context,
+      initialTime: fascia.inizio,
+    );
+    if (timeInizio == null || !mounted) return;
+
+    final timeFine = await showTimePicker(
+      context: context,
+      initialTime: fascia.fine,
+    );
+    if (timeFine == null || !mounted) return;
 
     final result = await showDialog<Map<String, dynamic>?>(
       context: context,
@@ -872,6 +878,8 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
     if (result != null && mounted) {
       setState(() {
         _fasce[index] = fascia.copyWith(
+          minutiInizio: timeInizio.hour * 60 + timeInizio.minute,
+          minutiFine: timeFine.hour * 60 + timeFine.minute,
           distrettoId: result['distrettoId'] as int,
           zonaId: result['zonaId'] as String,
           struttura: result['struttura'] as String?,
