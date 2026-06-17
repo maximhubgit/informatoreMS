@@ -21,6 +21,7 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
     final zoneAsync = ref.watch(zoneProvider);
     final zoneSelezionate = ref.watch(zoneSelezionateProvider);
     final medicoMap = ref.watch(medicoByIdProvider);
+    final zonaPerMedico = ref.watch(zonaPerMedicoProvider);
 
     final maxMedici = ref.watch(maxMediciPerGiornoProvider);
 
@@ -53,14 +54,6 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
       ),
       body: calendarioAsync.when(
         data: (appuntamenti) {
-          // Costruisci un map medicoId -> zonaId della fascia principale
-          final fasceAsyncValue = ref.watch(fasceOrarieProvider);
-          final fasce = fasceAsyncValue.asData?.value ?? [];
-          final zonaPerMedico = <String, String>{};
-          for (final fascia in fasce.where((f) => f.nr == 0)) {
-            zonaPerMedico[fascia.idMedico] = fascia.zonaId;
-          }
-
           final proposti = zoneSelezionate.isEmpty
               ? appuntamenti
                   .where((a) => !a.stato.isConcluso)
@@ -130,6 +123,8 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
     final hasFasciaInfo = fascia != null &&
         ((fascia.struttura != null && fascia.struttura!.isNotEmpty) ||
             (fascia.indirizzo != null && fascia.indirizzo!.isNotEmpty));
+    final telefono = medico?.telefono?.trim();
+    final hasTelefono = telefono != null && telefono.isNotEmpty;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -231,9 +226,29 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
                   ),
                 ),
             ],
+            if (hasTelefono) ...[
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Icon(Icons.phone_rounded, size: 12, color: Colors.grey.shade700),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      telefono,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
-        isThreeLine: hasFasciaInfo,
+        isThreeLine: hasFasciaInfo || hasTelefono,
         trailing: Icon(
           app.stato == StatoCalendario.proposto
               ? Icons.add_circle_outline
@@ -264,6 +279,8 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
     final fascia = app.fasciaOrariaId != null ? fasciaMap[app.fasciaOrariaId] : null;
     final hasFasciaInfo = (fascia?.struttura != null && fascia!.struttura!.isNotEmpty) ||
         (fascia?.indirizzo != null && fascia!.indirizzo!.isNotEmpty);
+    final telefono = medico?.telefono?.trim();
+    final hasTelefono = telefono != null && telefono.isNotEmpty;
 
     showDialog(
       context: context,
@@ -311,6 +328,23 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+              ],
+              if (hasTelefono) ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(
+                    children: [
+                      Icon(Icons.phone_rounded, size: 14, color: Colors.grey.shade700),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          telefono,
+                          style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
               const SizedBox(height: 8),
               Text('Stato: verrà impostato come "Confermato"'),

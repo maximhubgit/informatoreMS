@@ -67,7 +67,18 @@
       "Bash(git filter-branch *)",
       "Bash(git stash *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(flutter doctor *)",
+      "PowerShell(dart pub *)",
+      "PowerShell(& \"$env:LOCALAPPDATA\\\\Pub\\\\Cache\\\\bin\\\\flutterfire\" configure --platforms=windows 2>&1)",
+      "PowerShell(npm install *)",
+      "Bash(Get-ChildItem *)",
+      "Bash(dir *)",
+      "Bash(python -c ' *)",
+      "Bash(pip install *)",
+      "Bash(python *)",
+      "Bash(powershell *)",
+      "PowerShell(dart analyze *)"
     ]
   }
 }

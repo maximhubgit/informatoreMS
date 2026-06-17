@@ -1,0 +1,22 @@
+# Service account key (NON committare per sicurezza)
+serviceAccountKey.json
+service-account*.json
+*.key.json
+
+# Output degli export (contengono dati del DB)
+export_informatorems_*.xlsx
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Ambiente virtuale
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp

@@ -7,9 +7,28 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:325738421283:android:1bd57ba071f656c0706596",
+        "mobilesdk_app_id": "1:325738421283:android:ad06bd23e8014c9a706596",
         "android_client_info": {
           "package_name": "com.informatorems.informatoreMS"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwvRJr4rDRrfBru-G2YsuF-Uq2ZI5NXuw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:325738421283:android:1bd57ba071f656c0706596",
+        "android_client_info": {
+          "package_name": "imformatore.ms.it"
         }
       },
       "oauth_client": [],

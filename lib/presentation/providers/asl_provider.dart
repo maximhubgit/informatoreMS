@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:informatoreMS/core/models/asl.dart';
 import 'package:informatoreMS/data/repositories/asl_repository.dart';
 import 'package:informatoreMS/data/repositories/remote/firebase_asl_repository.dart' as firebase;
-import 'package:informatoreMS/data/providers/mock_asl_provider.dart';
 
 /// Repository Firebase per le ASL (import esplicito per evitare ambiguità).
 class _WebAslRepository implements AslRepository {
@@ -43,12 +42,7 @@ final aslRepositoryProvider = Provider<AslRepository>((ref) {
 /// Provider che espone la lista delle ASL.
 final aslProvider = FutureProvider<List<Asl>>((ref) async {
   final repo = ref.watch(aslRepositoryProvider);
-  try {
-    return await repo.getAll();
-  } catch (e) {
-    // Fallback sui dati mock in caso di errore
-    return MockAslProvider.aslList;
-  }
+  return repo.getAll();
 });
 
 /// Provider che mappa codice -> Asl.

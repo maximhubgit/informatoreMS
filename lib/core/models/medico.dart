@@ -7,6 +7,7 @@ class Medico extends Equatable {
   final int periodicitaGiorni;
   final String? calendarioAppuntamentoId; // Foreign key all'evento nel calendario
   final String? annotazioni; // Note libere per il medico
+  final String? telefono; // Recapiti telefonici liberi (più numeri con annotazioni)
   final String? prodotti; // Prodotti/terapie associate
 
   const Medico({
@@ -16,6 +17,7 @@ class Medico extends Equatable {
     required this.periodicitaGiorni,
     this.calendarioAppuntamentoId,
     this.annotazioni,
+    this.telefono,
     this.prodotti,
   });
 
@@ -28,6 +30,7 @@ class Medico extends Equatable {
     int? periodicitaGiorni,
     String? calendarioAppuntamentoId,
     String? annotazioni,
+    String? telefono,
     String? prodotti,
   }) {
     return Medico(
@@ -37,6 +40,7 @@ class Medico extends Equatable {
       periodicitaGiorni: periodicitaGiorni ?? this.periodicitaGiorni,
       calendarioAppuntamentoId: calendarioAppuntamentoId ?? this.calendarioAppuntamentoId,
       annotazioni: annotazioni ?? this.annotazioni,
+      telefono: telefono ?? this.telefono,
       prodotti: prodotti ?? this.prodotti,
     );
   }
@@ -49,6 +53,7 @@ class Medico extends Equatable {
       'periodicitaGiorni': periodicitaGiorni,
       'calendarioAppuntamentoId': calendarioAppuntamentoId,
       'annotazioni': annotazioni,
+      'telefono': telefono,
       'prodotti': prodotti,
     };
   }
@@ -61,6 +66,7 @@ class Medico extends Equatable {
       periodicitaGiorni: (json['periodicitaGiorni'] as num?)?.toInt() ?? 30,
       calendarioAppuntamentoId: json['calendarioAppuntamentoId'] as String?,
       annotazioni: json['annotazioni'] as String?,
+      telefono: json['telefono'] as String?,
       prodotti: json['prodotti'] as String?,
     );
   }
@@ -73,6 +79,7 @@ class Medico extends Equatable {
         periodicitaGiorni,
         calendarioAppuntamentoId,
         annotazioni,
+        telefono,
         prodotti,
       ];
 }

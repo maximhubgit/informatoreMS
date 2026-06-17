@@ -8,6 +8,33 @@ class FirebaseFasciaOrariaRepository implements FasciaOrariaRepository {
   static const String _collection = 'fasceOrarie';
 
   @override
+  Future<List<FasciaOraria>> getAll() async {
+    try {
+      // Una singola query senza where per evitare la necessità di indici
+      // compositi e per evitare il pattern N+1 sulle liste di medici.
+      final snapshot = await _db.collection(_collection).get();
+      final fasce = snapshot.docs
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final dataWithId = Map<String, dynamic>.from(data);
+            dataWithId['id'] = doc.id;
+            return FasciaOraria.fromJson(dataWithId);
+          })
+          .where((fascia) => !fascia.deleted) // Filtro soft-delete a livello applicativo
+          .toList();
+      // Ordinamento per idMedico (e poi nr) per facilitare raggruppamenti downstream.
+      fasce.sort((a, b) {
+        final cmp = a.idMedico.compareTo(b.idMedico);
+        return cmp != 0 ? cmp : a.nr.compareTo(b.nr);
+      });
+      return fasce;
+    } catch (e) {
+      print('ERRORE getAll fasceOrarie: $e');
+      rethrow;
+    }
+  }
+
+  @override
   Future<List<FasciaOraria>> getByMedicoId(String medicoId) async {
     try {
       // Prima prova senza orderBy (per testare se è l'indice il problema)

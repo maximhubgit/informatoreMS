@@ -23,13 +23,13 @@ class _WebZonaRepository implements ZonaRepository {
 
 /// Provider del repository zone con logica:
 /// - Web: solo Firebase (mostra errore se offline)
-/// - Mobile: Firebase con persistenza offline integrata
+/// - Mobile/Desktop: Firebase (persistenza offline gestita da Firestore SDK)
 final zonaRepositoryProvider = Provider<ZonaRepository>((ref) {
   if (kIsWeb) {
     return _WebZonaRepository();
   }
   return firebase.FirebaseZonaRepository();
-});
+}, dependencies: []);
 
 /// Provider che espone la lista delle zone.
 final zoneProvider = FutureProvider<List<Zona>>((ref) async {

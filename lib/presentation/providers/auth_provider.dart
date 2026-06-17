@@ -13,35 +13,28 @@ class AuthNotifier extends StateNotifier<AuthStatus> {
   AuthNotifier() : super(AuthStatus.unauthenticated); // Parte sempre da non autenticato
 
   Future<void> login() async {
-    // Login fittizio (mock) - non richiede credenziali reali
-    try {
-      // Prova a usare Firebase, ma in modalità mock va in catch
-      await FirebaseAuth.instance.signInAnonymously();
-      state = AuthStatus.authenticated;
-    } catch (e) {
-      // Modalità mock - sempre autenticato dopo aver premuto Accedi
-      state = AuthStatus.authenticated;
-    }
+    // Login anonimo via Firebase Auth.
+    // Eventuali errori (es. Auth non abilitato, network) vengono propagati
+    // alla UI che li mostra all'utente.
+    await FirebaseAuth.instance.signInAnonymously();
+    state = AuthStatus.authenticated;
   }
 
-  void logout() async {
+  Future<void> logout() async {
+    // Tenta il sign-out Firebase. Se per qualsiasi motivo fallisce
+    // (es. già disconnesso), lo stato locale viene comunque portato a
+    // "unauthenticated" per riflettere ciò che l'utente vede.
     try {
       await FirebaseAuth.instance.signOut();
-      state = AuthStatus.unauthenticated;
-    } catch (e) {
-      // Mock mode
-      state = AuthStatus.unauthenticated;
+    } catch (_) {
+      // Ignora: lo stato locale viene aggiornato comunque.
     }
+    state = AuthStatus.unauthenticated;
   }
 
-  /// Login con email/password (per futuro)
+  /// Login con email/password.
   Future<void> loginWithEmail(String email, String password) async {
-    try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
-    } catch (e) {
-      // Mock mode - always succeeds
-      state = AuthStatus.authenticated;
-    }
+    await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
   }
 }
 

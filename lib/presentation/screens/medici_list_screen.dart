@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:informatoreMS/core/extensions/date_time_extension.dart';
 import 'package:informatoreMS/core/extensions/specializzazione_extension.dart';
-import 'package:informatoreMS/core/models/calendario_appuntamento.dart';
 import 'package:informatoreMS/core/models/medico.dart';
-import 'package:informatoreMS/core/models/specializzazione.dart';
 import 'package:informatoreMS/presentation/providers/calendario_provider.dart';
 import 'package:informatoreMS/presentation/providers/medici_provider.dart';
 import 'package:informatoreMS/presentation/providers/specializzazione_provider.dart';
@@ -22,9 +20,12 @@ class MediciListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mediciAsync = ref.watch(mediciProvider);
-    final calendarioAsync = ref.watch(calendarioProvider);
     final zoneSelezionate = ref.watch(zoneSelezionateProvider);
     final ordinamento = ref.watch(ordinamentoMedicoProvider);
+    // Mappe memoizzate: calcolate una sola volta per render, condivise
+    // tra ordinamento, filtro e costruzione dei tile.
+    final zonaPerMedico = ref.watch(zonaPerMedicoProvider);
+    final prossimeVisite = ref.watch(prossimeVisiteProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -67,24 +68,18 @@ class MediciListScreen extends ConsumerWidget {
       ),
       body: mediciAsync.when(
         data: (medici) {
-          // Costruisci un map medicoId -> zonaId della fascia principale
-          final fasceAsyncValue = ref.watch(fasceOrarieProvider);
-          final fasce = fasceAsyncValue.asData?.value ?? [];
-          final zonaPerMedico = <String, String>{};
-          for (final fascia in fasce.where((f) => f.nr == 0)) {
-            zonaPerMedico[fascia.idMedico] = fascia.zonaId;
-          }
-
           final mediciFiltrati = zoneSelezionate.isEmpty
               ? medici
-              : medici.where((m) => zoneSelezionate.contains(zonaPerMedico[m.id])).toList();
+              : medici
+                  .where((m) => zoneSelezionate.contains(zonaPerMedico[m.id]))
+                  .toList();
 
           if (mediciFiltrati.isEmpty) {
             return _emptyState(context);
           }
 
-          final mediciOrdinati = _ordinaMedici(
-              mediciFiltrati, calendarioAsync.asData?.value ?? [], ordinamento, ref);
+          final mediciOrdinati =
+              _ordinaMedici(mediciFiltrati, zonaPerMedico, prossimeVisite, ordinamento);
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -102,11 +97,10 @@ class MediciListScreen extends ConsumerWidget {
                 ),
                 onDismissed: (_) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Medico eliminato (mock)')),
+                    const SnackBar(content: Text('Medico eliminato')),
                   );
                 },
-                child: _buildMedicoTile(
-                    context, medico, calendarioAsync.asData?.value ?? [], ref),
+                child: _buildMedicoTile(context, medico, ref),
               );
             },
           );
@@ -147,29 +141,24 @@ class MediciListScreen extends ConsumerWidget {
     );
   }
 
+  /// Ordina i medici usando le mappe memoizzate passate dal build().
+  /// Nessun filtro su `fasceOrarieProvider` qui dentro: tutto è già
+  /// pre-calcolato da `zonaPerMedicoProvider` e `prossimeVisiteProvider`.
   List<Medico> _ordinaMedici(
     List<Medico> medici,
-    List<CalendarioAppuntamento> calendario,
+    Map<String, String> zonaPerMedico,
+    Map<String, DateTime?> prossimeVisite,
     OrdinamentoMedico ordinamento,
-    WidgetRef ref,
   ) {
     final result = List<Medico>.from(medici);
-
-    // Costruisci un map medicoId -> zonaId della fascia principale
-    final fasceAsyncValue = ref.read(fasceOrarieProvider);
-    final fasce = fasceAsyncValue.asData?.value ?? [];
-    final zonaPerMedico = <String, String>{};
-    for (final fascia in fasce.where((f) => f.nr == 0)) {
-      zonaPerMedico[fascia.idMedico] = fascia.zonaId;
-    }
 
     switch (ordinamento) {
       case OrdinamentoMedico.alfabetico:
         result.sort((a, b) => a.nomeCompleto.compareTo(b.nomeCompleto));
       case OrdinamentoMedico.prossimaVisita:
         result.sort((a, b) {
-          final aVisita = _calcolaProssimaVisita(a, calendario);
-          final bVisita = _calcolaProssimaVisita(b, calendario);
+          final aVisita = prossimeVisite[a.id];
+          final bVisita = prossimeVisite[b.id];
           if (aVisita == null && bVisita == null) return 0;
           if (aVisita == null) return 1;
           if (bVisita == null) return -1;
@@ -184,35 +173,6 @@ class MediciListScreen extends ConsumerWidget {
     }
 
     return result;
-  }
-
-  DateTime? _calcolaProssimaVisita(Medico medico, List<CalendarioAppuntamento> calendario) {
-    // Prima controlla se c'è un appuntamento concordato nel calendario
-    final concordato = calendario.where((a) =>
-        a.medicoId == medico.id && a.stato == StatoCalendario.concordato).toList();
-    if (concordato.isNotEmpty) {
-      concordato.sort((a, b) => a.data.compareTo(b.data));
-      return concordato.first.soloData;
-    }
-
-    // Poi cerca tra i proposti (non ancora confermati)
-    final proposti = calendario.where((a) =>
-        a.medicoId == medico.id && a.stato == StatoCalendario.proposto).toList();
-    if (proposti.isNotEmpty) {
-      proposti.sort((a, b) => a.data.compareTo(b.data));
-      return proposti.first.soloData;
-    }
-
-    // Infine usa l'ultima visita fatta
-    final ultimi = calendario
-        .where((a) => a.medicoId == medico.id && a.stato == StatoCalendario.fatto)
-        .toList();
-    if (ultimi.isNotEmpty) {
-      ultimi.sort((a, b) => b.data.compareTo(a.data));
-      return ultimi.first.soloData.addDays(medico.periodicitaGiorni);
-    }
-
-    return null;
   }
 
   Widget _emptyState(BuildContext context) {
@@ -240,18 +200,15 @@ class MediciListScreen extends ConsumerWidget {
   Widget _buildMedicoTile(
     BuildContext context,
     Medico medico,
-    List<CalendarioAppuntamento> calendario,
     WidgetRef ref,
   ) {
+    // Lookup O(1) nelle mappe memoizzate: niente più scan lineari di 1630 fasce
+    // o dell'intero calendario per ogni tile.
     final zoneMap = ref.read(zonaByIdProvider);
     final specializzazioniMap = ref.read(specializzazioneByIdProvider);
     final specializzazione = specializzazioniMap[medico.specializzazioneId];
-    final prossimaVisita = _calcolaProssimaVisita(medico, calendario);
-
-    // Prendi la zona dalla fascia principale (nr=0)
-    final fasceAsyncValue = ref.read(fasceOrarieProvider);
-    final fasce = fasceAsyncValue.asData?.value ?? [];
-    final fasciaPrincipale = fasce.where((f) => f.idMedico == medico.id && f.nr == 0).firstOrNull;
+    final prossimaVisita = ref.read(prossimaVisitaPerMedicoProvider(medico.id));
+    final fasciaPrincipale = ref.read(fasciaPrincipaleProvider)[medico.id];
     final zona = fasciaPrincipale != null ? zoneMap[fasciaPrincipale.zonaId] : null;
 
     return Card(

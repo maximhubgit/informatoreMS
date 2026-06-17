@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:informatoreMS/core/extensions/date_time_extension.dart';
 import 'package:informatoreMS/core/models/calendario_appuntamento.dart';
 import 'package:informatoreMS/core/models/fascia_oraria.dart';
 import 'package:informatoreMS/core/models/medico.dart';
@@ -11,7 +12,7 @@ import 'package:informatoreMS/presentation/providers/zone_selezionate_provider.d
 import 'package:informatoreMS/data/repositories/remote/firebase_calendario_repository.dart' as firebase;
 
 // Import del provider medici
-import 'package:informatoreMS/presentation/providers/medici_provider.dart' show mediciProvider, fasciaOrariaRepositoryProvider;
+import 'package:informatoreMS/presentation/providers/medici_provider.dart' show mediciProvider, fasceOrarieProvider;
 
 /// Provider per forzare il refresh del calendario
 final refreshTriggerProvider = StateProvider<int>((ref) => 0);
@@ -59,7 +60,7 @@ class _WebCalendarioRepository implements CalendarioRepository {
 
 /// Provider del repository calendario con logica:
 /// - Web: solo Firebase (mostra errore se offline)
-/// - Mobile: Firebase con persistenza offline integrata
+/// - Mobile/Desktop: Firebase (persistenza offline gestita da Firestore SDK)
 final calendarioRepositoryProvider = Provider<CalendarioRepository>((ref) {
   if (kIsWeb) {
     return _WebCalendarioRepository();
@@ -112,17 +113,9 @@ final calendarioProvider = FutureProvider<List<CalendarioAppuntamento>>((ref) as
   final range = ref.watch(calendarioRangeProvider);
   final calendarioRepo = ref.watch(calendarioRepositoryProvider);
 
-  // Carica le fasce orarie prima del filtraggio
-  final fasciaRepo = ref.watch(fasciaOrariaRepositoryProvider);
-  final List<FasciaOraria> allFasce = [];
-  for (final medico in medici) {
-    try {
-      final fasce = await fasciaRepo.getByMedicoId(medico.id);
-      allFasce.addAll(fasce);
-    } catch (_) {
-      // Ignora errori individuali
-    }
-  }
+  // Riusa il caricamento fasce dal provider: una sola query Firestore
+  // condivisa con le altre schermate. Vedi `fasceOrarieProvider`.
+  final allFasce = ref.watch(fasceOrarieProvider).valueOrNull ?? const <FasciaOraria>[];
 
   // Costruisci map medicoId -> zonaId della fascia principale (nr=0)
   final zonaPerMedico = <String, String>{};
@@ -228,6 +221,99 @@ final appuntamentiPerMedicoProvider = Provider.autoDispose
     error: (_, __) => <CalendarioAppuntamento>[],
   );
 });
+
+/// Calcola la prossima visita di un singolo medico, una volta per build.
+/// Usato dai tile della lista medici (cache automatico per medicoId).
+/// Implementazione O(1) per medico grazie a `appuntamentiPerMedicoMapProvider`.
+final prossimaVisitaPerMedicoProvider =
+    Provider.family<DateTime?, String>((ref, medicoId) {
+  ref.watch(calendarioProvider);
+  final mediciAsync = ref.watch(mediciProvider);
+  final medici = mediciAsync.valueOrNull ?? const <Medico>[];
+  final appuntamentiMap = ref.watch(appuntamentiPerMedicoMapProvider);
+
+  // Lookup O(n) solo per trovare l'oggetto Medico (serve la periodicitaGiorni).
+  // N=204 → trascurabile.
+  for (final m in medici) {
+    if (m.id == medicoId) {
+      return _calcolaProssimaVisita(m, appuntamentiMap);
+    }
+  }
+  return null;
+});
+
+/// Raggruppa TUTTI gli appuntamenti per medicoId in una singola passata.
+/// Complessità: O(calendario_size) per build della mappa, O(1) per ogni
+/// lookup successivo. Fondamentale: senza questa mappa, calcolare la
+/// prossima visita per 204 medici era O(calendario_size × 204), che con
+/// migliaia di appuntamenti bloccava la UI per secondi durante il build.
+final appuntamentiPerMedicoMapProvider =
+    Provider<Map<String, List<CalendarioAppuntamento>>>((ref) {
+  final calendario = ref.watch(calendarioProvider).valueOrNull ?? const <CalendarioAppuntamento>[];
+  final result = <String, List<CalendarioAppuntamento>>{};
+  for (final app in calendario) {
+    (result[app.medicoId] ??= <CalendarioAppuntamento>[]).add(app);
+  }
+  return result;
+});
+
+/// Mappa memoizzata medicoId -> prossima visita per TUTTI i medici.
+/// Calcolata una sola volta per render, evita N passate sul calendario
+/// durante l'ordinamento e il rendering di molti tile.
+final prossimeVisiteProvider = Provider<Map<String, DateTime?>>((ref) {
+  // Dipendenze: cambia calendario o lista medici → ricalcola.
+  ref.watch(calendarioProvider);
+  final medici = ref.watch(mediciProvider).valueOrNull ?? const <Medico>[];
+  final appuntamentiMap = ref.watch(appuntamentiPerMedicoMapProvider);
+  return {
+    for (final m in medici) m.id: _calcolaProssimaVisita(m, appuntamentiMap),
+  };
+});
+
+/// Calcola la prossima visita di un medico usando la mappa pre-raggruppata.
+/// Costo: O(1) per il lookup + O(k log k) per l'ordinamento della
+/// sottolista (k = numero appuntamenti del singolo medico, di solito < 10).
+DateTime? _calcolaProssimaVisita(
+  Medico medico,
+  Map<String, List<CalendarioAppuntamento>> appuntamentiMap,
+) {
+  final apps = appuntamentiMap[medico.id] ?? const <CalendarioAppuntamento>[];
+  if (apps.isEmpty) return null;
+
+  // Singola passata per separare concordati/proposti/fatti.
+  final concordati = <CalendarioAppuntamento>[];
+  final proposti = <CalendarioAppuntamento>[];
+  CalendarioAppuntamento? ultimoFatto;
+  for (final app in apps) {
+    switch (app.stato) {
+      case StatoCalendario.concordato:
+        concordati.add(app);
+      case StatoCalendario.proposto:
+        proposti.add(app);
+      case StatoCalendario.fatto:
+        if (ultimoFatto == null || app.data.isAfter(ultimoFatto.data)) {
+          ultimoFatto = app;
+        }
+      case StatoCalendario.confermato:
+      case StatoCalendario.annullato:
+        // non rilevanti per la prossima visita
+        break;
+    }
+  }
+
+  if (concordati.isNotEmpty) {
+    concordati.sort((a, b) => a.data.compareTo(b.data));
+    return concordati.first.soloData;
+  }
+  if (proposti.isNotEmpty) {
+    proposti.sort((a, b) => a.data.compareTo(b.data));
+    return proposti.first.soloData;
+  }
+  if (ultimoFatto != null) {
+    return ultimoFatto.soloData.addDays(medico.periodicitaGiorni);
+  }
+  return null;
+}
 
 /// Provider family per gli appuntamenti di una specifica data.
 final appuntamentiDelGiornoProvider = Provider.autoDispose

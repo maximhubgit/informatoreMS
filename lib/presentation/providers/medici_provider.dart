@@ -44,13 +44,13 @@ class _WebMedicoRepository implements MedicoRepository {
 
 /// Provider del repository medici con logica:
 /// - Web: solo Firebase (mostra errore se offline)
-/// - Mobile: Firebase con persistenza offline integrata (si sincronizza automaticamente)
+/// - Mobile/Desktop: Firebase (la persistenza offline è gestita da Firestore SDK)
 final medicoRepositoryProvider = Provider<MedicoRepository>((ref) {
   if (kIsWeb) {
     return _WebMedicoRepository();
   }
   return firebase.FirebaseMedicoRepository();
-});
+}, dependencies: []);
 
 /// Provider che espone tutti i medici.
 final mediciProvider = FutureProvider<List<Medico>>((ref) async {
@@ -79,6 +79,15 @@ final eliminaMedicoProvider = Provider((ref) {
 /// Repository wrapper per web che lancia errore se offline (per fasce orarie).
 class _WebFasciaOrariaRepository implements FasciaOrariaRepository {
   final _firebaseRepo = firebase_fascia.FirebaseFasciaOrariaRepository();
+
+  @override
+  Future<List<FasciaOraria>> getAll() async {
+    try {
+      return await _firebaseRepo.getAll();
+    } catch (e) {
+      throw Exception('Errore caricamento fasce: $e. Controlla la connessione.');
+    }
+  }
 
   @override
   Future<List<FasciaOraria>> getByMedicoId(String medicoId) async {
@@ -132,19 +141,16 @@ final fasciaOrariaRepositoryProvider = Provider<FasciaOrariaRepository>((ref) {
     return _WebFasciaOrariaRepository();
   }
   return firebase_fascia.FirebaseFasciaOrariaRepository();
-});
+}, dependencies: []);
 
 /// Provider che espone tutte le fasce orarie.
+///
+/// Esegue una singola query Firestore invece di N query separate per
+/// ciascun medico: con 204 medici il vecchio pattern N+1 causava freeze
+/// di 30+ secondi all'avvio.
 final fasceOrarieProvider = FutureProvider<List<FasciaOraria>>((ref) async {
   final repo = ref.watch(fasciaOrariaRepositoryProvider);
-  // Ottieni tutti i medici e poi le loro fasce
-  final medici = ref.watch(mediciProvider).valueOrNull ?? [];
-  final allFasce = <FasciaOraria>[];
-  for (final medico in medici) {
-    final fasce = await repo.getByMedicoId(medico.id);
-    allFasce.addAll(fasce);
-  }
-  return allFasce;
+  return repo.getAll();
 });
 
 /// Provider per salvare una fascia oraria.
@@ -183,23 +189,42 @@ final fasciaByIdProvider = Provider<Map<String, FasciaOraria>>((ref) {
   };
 });
 
+/// Mappa memoizzata medicoId -> zonaId della fascia principale (nr=0).
+/// Calcolata una sola volta per render, evita di filtrare tutte le fasce
+/// in ogni widget che necessita di questa associazione.
+final zonaPerMedicoProvider = Provider<Map<String, String>>((ref) {
+  final fasceAsync = ref.watch(fasceOrarieProvider);
+  final fasce = fasceAsync.valueOrNull ?? const <FasciaOraria>[];
+  return {
+    for (final f in fasce)
+      if (f.nr == 0) f.idMedico: f.zonaId,
+  };
+});
+
+/// Mappa memoizzata medicoId -> FasciaOraria principale (nr=0).
+/// Lookup O(1) per evitare di scorrere tutte le fasce in ogni tile.
+final fasciaPrincipaleProvider = Provider<Map<String, FasciaOraria>>((ref) {
+  final fasceAsync = ref.watch(fasceOrarieProvider);
+  final fasce = fasceAsync.valueOrNull ?? const <FasciaOraria>[];
+  return {
+    for (final f in fasce)
+      if (f.nr == 0) f.idMedico: f,
+  };
+});
+
 /// Provider derivato: medici filtrati per le zone selezionate.
 /// Filtriamo in base alla zona della fascia principale (nr=0) del medico.
 final mediciFiltratiProvider = Provider<AsyncValue<List<Medico>>>((ref) {
   final zoneSelezionate = ref.watch(zoneSelezionateProvider);
   final mediciAsync = ref.watch(mediciProvider);
-  final fasceAsync = ref.watch(fasceOrarieProvider);
+  final zonaPerMedico = ref.watch(zonaPerMedicoProvider);
 
   return mediciAsync.when(
     data: (medici) {
       if (zoneSelezionate.isEmpty) return AsyncData(medici);
-      // Costruisci un map medicoId -> zonaId della fascia principale
-      final fasce = fasceAsync.valueOrNull ?? [];
-      final zonaPerMedico = <String, String>{};
-      for (final fascia in fasce.where((f) => f.nr == 0)) {
-        zonaPerMedico[fascia.idMedico] = fascia.zonaId;
-      }
-      final filtrati = medici.where((m) => zoneSelezionate.contains(zonaPerMedico[m.id])).toList();
+      final filtrati = medici
+          .where((m) => zoneSelezionate.contains(zonaPerMedico[m.id]))
+          .toList();
       return AsyncData(filtrati);
     },
     loading: () => const AsyncValue.loading(),

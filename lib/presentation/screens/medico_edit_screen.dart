@@ -27,6 +27,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
   late final TextEditingController _nomeCtrl;
   late final TextEditingController _periodicitaCtrl;
   late final TextEditingController _annotazioniCtrl;
+  late final TextEditingController _telefonoCtrl;
   late final TextEditingController _prodottiCtrl;
   late String? _selectedSpecializzazioneId;
   late List<FasciaOraria> _fasce;
@@ -38,6 +39,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
     _nomeCtrl = TextEditingController(text: m?.nome ?? '');
     _periodicitaCtrl = TextEditingController(text: m?.periodicitaGiorni.toString() ?? '30');
     _annotazioniCtrl = TextEditingController(text: m?.annotazioni ?? '');
+    _telefonoCtrl = TextEditingController(text: m?.telefono ?? '');
     _prodottiCtrl = TextEditingController(text: m?.prodotti ?? '');
     _selectedSpecializzazioneId = m?.specializzazioneId;
     _fasce = []; // Verranno caricate nel build
@@ -48,6 +50,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
     _nomeCtrl.dispose();
     _periodicitaCtrl.dispose();
     _annotazioniCtrl.dispose();
+    _telefonoCtrl.dispose();
     _prodottiCtrl.dispose();
     super.dispose();
   }
@@ -163,6 +166,18 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
             TextFormField(
               controller: _annotazioniCtrl,
               decoration: const InputDecoration(labelText: 'Annotazioni'),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _telefonoCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Telefono',
+                hintText: 'Più numeri con annotazioni libere',
+                prefixIcon: Icon(Icons.phone_rounded),
+              ),
+              keyboardType: TextInputType.multiline,
+              maxLines: null,
+              minLines: 1,
             ),
             const SizedBox(height: 8),
             TextFormField(
@@ -907,6 +922,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
       specializzazioneId: _selectedSpecializzazioneId!,
       periodicitaGiorni: int.parse(_periodicitaCtrl.text),
       annotazioni: _annotazioniCtrl.text.isNotEmpty ? _annotazioniCtrl.text : null,
+      telefono: _telefonoCtrl.text.isNotEmpty ? _telefonoCtrl.text : null,
       prodotti: _prodottiCtrl.text.isNotEmpty ? _prodottiCtrl.text : null,
     );
 

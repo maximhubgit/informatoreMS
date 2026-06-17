@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:informatoreMS/core/models/distretto.dart';
 import 'package:informatoreMS/data/repositories/distretto_repository.dart';
 import 'package:informatoreMS/data/repositories/remote/firebase_distretto_repository.dart' as firebase;
-import 'package:informatoreMS/data/providers/mock_distretto_provider.dart';
 
 /// Repository Firebase per i distretti (import esplicito per evitare ambiguità).
 class _WebDistrettoRepository implements DistrettoRepository {
@@ -48,12 +47,7 @@ final distrettoRepositoryProvider = Provider<DistrettoRepository>((ref) {
 /// Provider che espone la lista dei distretti.
 final distrettoProvider = FutureProvider<List<Distretto>>((ref) async {
   final repo = ref.watch(distrettoRepositoryProvider);
-  try {
-    return await repo.getAll();
-  } catch (e) {
-    // Fallback sui dati mock in caso di errore
-    return MockDistrettoProvider.distretti;
-  }
+  return repo.getAll();
 });
 
 /// Provider che mappa codice -> Distretto.

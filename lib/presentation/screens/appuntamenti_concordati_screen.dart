@@ -175,7 +175,7 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
     final calendarioAsync = ref.watch(calendarioProvider);
     final mediciAsync = ref.watch(mediciProvider);
     final specialMap = ref.watch(specializzazioneByIdProvider);
-    final fasceAsync = ref.watch(fasceOrarieProvider);
+    final fasceById = ref.watch(fasciaByIdProvider);
     final zoneAsync = ref.watch(zoneProvider);
 
     return calendarioAsync.when(
@@ -215,7 +215,7 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
                     app: app,
                     medico: medico,
                     specializzazione: medico != null ? specialMap[medico.specializzazioneId] : null,
-                    fasce: fasceAsync.asData?.value ?? const [],
+                    fasceById: fasceById,
                     zone: zoneAsync.asData?.value ?? const [],
                     onTap: () {
                       if (medico != null) {
@@ -319,15 +319,16 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
 
     // Filtro ricerca testo
     if (_searchQuery.isNotEmpty) {
-      final medici = ref.read(mediciProvider).valueOrNull ?? [];
-      final fasce = ref.read(fasceOrarieProvider).asData?.value ?? const [];
+      final mediciMap = ref.read(medicoByIdProvider);
+      final fasceMap = ref.read(fasciaByIdProvider);
       result = result.where((app) {
-        final medico = medici.where((m) => m.id == app.medicoId).firstOrNull;
+        final medico = mediciMap[app.medicoId];
         final fascia = app.fasciaOrariaId != null
-            ? fasce.where((f) => f.id == app.fasciaOrariaId).firstOrNull
+            ? fasceMap[app.fasciaOrariaId]
             : null;
         final haystack = [
           medico?.nome ?? '',
+          medico?.telefono ?? '',
           fascia?.struttura ?? '',
           fascia?.indirizzo ?? '',
           app.note ?? '',
@@ -759,7 +760,7 @@ class _AppuntamentoCard extends StatelessWidget {
   final CalendarioAppuntamento app;
   final Medico? medico;
   final Specializzazione? specializzazione;
-  final List<FasciaOraria> fasce;
+  final Map<String, FasciaOraria> fasceById;
   final List<Zona> zone;
   final VoidCallback onTap;
   final VoidCallback onDelete;
@@ -768,7 +769,7 @@ class _AppuntamentoCard extends StatelessWidget {
     required this.app,
     required this.medico,
     required this.specializzazione,
-    required this.fasce,
+    required this.fasceById,
     required this.zone,
     required this.onTap,
     required this.onDelete,
@@ -779,10 +780,15 @@ class _AppuntamentoCard extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
+    // Lookup O(1) via mappa (vedi `fasciaByIdProvider`) invece di una
+    // scansione lineare su tutte le fasce: con 1630 fasce e molti
+    // appuntamenti la scansione era O(n*m).
     final fascia = app.fasciaOrariaId != null
-        ? fasce.where((f) => f.id == app.fasciaOrariaId).firstOrNull
+        ? fasceById[app.fasciaOrariaId]
         : null;
     final spec = specializzazione;
+    final telefono = medico?.telefono?.trim();
+    final hasTelefono = telefono != null && telefono.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
@@ -912,6 +918,26 @@ class _AppuntamentoCard extends StatelessWidget {
                                     fontSize: 12,
                                   ),
                                   maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (hasTelefono) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(Icons.phone_rounded, size: 14, color: cs.onSurfaceVariant),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  telefono,
+                                  style: TextStyle(
+                                    color: cs.onSurfaceVariant,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
