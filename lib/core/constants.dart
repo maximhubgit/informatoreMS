@@ -2,7 +2,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'Medical Calendar';
+  static const String appName = 'BIOGENA';
 
   // Durata di default in minuti per una visita.
   static const int defaultTempoVisitaMinuti = 30;

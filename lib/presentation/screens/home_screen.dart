@@ -19,7 +19,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Calendario Medico'),
+        title: const Text('Informatore Medico Scentifico'),
         centerTitle: true,
       ),
       drawer: const AppDrawer(),
@@ -63,11 +63,11 @@ class BottomNavBar extends ConsumerWidget {
       destinations: const [
         NavigationDestination(
           icon: Icon(Icons.table_chart_outlined),
-          label: 'Pianificazioni',
+          label: 'Pianifica',
         ),
         NavigationDestination(
           icon: Icon(Icons.book_outlined),
-          label: 'Concordati',
+          label: 'Gestisci',
         ),
         NavigationDestination(
           icon: Icon(Icons.calendar_today),
@@ -133,7 +133,7 @@ class AppDrawer extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Calendario Medico',
+                          'Informatore Medico Scentifico',
                           style: theme.textTheme.titleLarge?.copyWith(
                             color: cs.onPrimary,
                             fontWeight: FontWeight.w700,
@@ -167,12 +167,12 @@ class AppDrawer extends ConsumerWidget {
                     const _SectionLabel('Principale'),
                     _DrawerItem(
                       icon: Icons.table_chart_outlined,
-                      label: 'Pianificazioni',
+                      label: 'Pianifica',
                       onTap: () => _openScreen(context, const ProssimiAppuntamentiScreen()),
                     ),
                     _DrawerItem(
                       icon: Icons.handshake_outlined,
-                      label: 'Concordati',
+                      label: 'Gestisci',
                       onTap: () => _openScreen(context, const AppuntamentiConcordatiScreen()),
                     ),
                     _DrawerItem(

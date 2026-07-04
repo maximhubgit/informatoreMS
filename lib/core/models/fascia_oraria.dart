@@ -47,6 +47,10 @@ class FasciaOraria extends Equatable {
   final String? indirizzo; // Indirizzo specifico per questa fascia
   final int? tempoVisitaMinuti; // Durata visita in minuti (se diversa da quella di default)
   final bool deleted; // Se true, la fascia è cancellata logicamente (non usata per scheduler)
+  final bool isFittizia; // Se true, fascia "segnaposto" usata solo per conservare i
+                        // dati anagrafici del medico (indirizzo/struttura/zona/distretto)
+                        // quando non ha orari reali. Sempre 00:00-00:00 domenica.
+                        // Esclusa dalla pianificazione dello scheduler.
 
   const FasciaOraria({
     this.id,
@@ -62,6 +66,7 @@ class FasciaOraria extends Equatable {
     this.indirizzo,
     this.tempoVisitaMinuti,
     this.deleted = false,
+    this.isFittizia = false,
   });
 
   /// Se true, la fascia vale per tutti i giorni della settimana.
@@ -99,6 +104,7 @@ class FasciaOraria extends Equatable {
     String? indirizzo,
     int? tempoVisitaMinuti,
     bool? deleted,
+    bool? isFittizia,
   }) {
     return FasciaOraria(
       id: id ?? this.id,
@@ -114,6 +120,7 @@ class FasciaOraria extends Equatable {
       indirizzo: indirizzo ?? this.indirizzo,
       tempoVisitaMinuti: tempoVisitaMinuti ?? this.tempoVisitaMinuti,
       deleted: deleted ?? this.deleted,
+      isFittizia: isFittizia ?? this.isFittizia,
     );
   }
 
@@ -132,6 +139,7 @@ class FasciaOraria extends Equatable {
       'indirizzo': indirizzo,
       'tempoVisitaMinuti': tempoVisitaMinuti,
       'deleted': deleted,
+      'isFittizia': isFittizia,
     };
   }
 
@@ -185,9 +193,10 @@ class FasciaOraria extends Equatable {
       tempoVisitaMinuti: (json['tempoVisitaMinuti'] as num?)?.toInt() ??
           (json['tempoVisitaMinuti'] as num?)?.toInt(),
       deleted: json['deleted'] as bool? ?? false,
+      isFittizia: json['isFittizia'] as bool? ?? false,
     );
   }
 
   @override
-  List<Object?> get props => [id, idMedico, nr, minutiInizio, minutiFine, slotDisponibili, giorniSettimana, distrettoId, zonaId, struttura, indirizzo, tempoVisitaMinuti, deleted];
+  List<Object?> get props => [id, idMedico, nr, minutiInizio, minutiFine, slotDisponibili, giorniSettimana, distrettoId, zonaId, struttura, indirizzo, tempoVisitaMinuti, deleted, isFittizia];
 }

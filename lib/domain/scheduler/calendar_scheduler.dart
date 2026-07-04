@@ -117,6 +117,20 @@ class CalendarScheduler {
     // Permette di controllare maxMediciPerGiorno in O(1) invece di O(generati).
     final mediciPerGiorno = <DateTime, int>{};
 
+    // === CONTATORE: mappa giorno -> numero medici già concordati/confermati/fatti per quel giorno ===
+    // Gli appuntamenti conclusi (fatto) occupano lo slot e contano nel limite giornaliero.
+    // I concordati vanno sempre mostrati a prescindere del limite max (ma contribuiscono al limite).
+    // Esclude: proposti (non confermati) e annullati (non riusciti).
+    final mediciEsistentiPerGiorno = <DateTime, int>{};
+    for (final e in esistenti) {
+      if (e.stato == StatoCalendario.concordato ||
+          e.stato == StatoCalendario.confermato ||
+          e.stato == StatoCalendario.fatto) {
+        final key = e.soloData.dateOnly;
+        mediciEsistentiPerGiorno.update(key, (v) => v + 1, ifAbsent: () => 1);
+      }
+    }
+
     final result = <CalendarioAppuntamento>[];
 
     // === PRE-CALCOLO FLAG DI PRIORITÀ per il sort: O(medici) confronti O(1) ===
@@ -177,6 +191,14 @@ class CalendarScheduler {
       // Lookup O(1) invece di fasceOrarie.where(...).toList() ad ogni iterazione
       final fasceMedico = fascePerMedico[medico.id] ?? const <FasciaOraria>[];
 
+      // Escludi le fasce "fittizie" (segnaposto per medici senza orari reali):
+      // 00:00-00:00 domenica usate solo per conservare i dati anagrafici.
+      // Non devono mai generare appuntamenti. Se un medico ha SOLO fasce
+      // fittizie, viene saltato completamente.
+      final fasceUtilizzabili =
+          fasceMedico.where((f) => !f.isFittizia).toList();
+      if (fasceUtilizzabili.isEmpty) continue;
+
       // Difesa contro periodicitaGiorni <= 0 che causerebbe loop infinito
       // nel while (la data non avanzerebbe mai). Default: 30 giorni.
       final periodicita =
@@ -198,27 +220,31 @@ class CalendarScheduler {
         }
 
         // O(1) invece di generati.where(...).length
+        // Somma medici proposti (in questa sessione) + medici concordati/confermati/fatti (esistenti)
         final numMediciGiorno = mediciPerGiorno[candidata.dateOnly] ?? 0;
-        if (numMediciGiorno >= maxMediciPerGiorno) {
+        final numMediciEsistenti = mediciEsistentiPerGiorno[candidata.dateOnly] ?? 0;
+
+        if (numMediciGiorno + numMediciEsistenti >= maxMediciPerGiorno) {
           candidata = candidata.add(const Duration(days: 1));
           continue;
         }
 
         final key = '${medico.id}:${candidata.year}-${candidata.month}-${candidata.day}';
+        // Se esiste gia un appuntamento per questo medico in questo giorno (qualsiasi stato),
+        // passa al successivo rispettando periodicita. Lo scheduler non genera duplicati.
         if (esistentiKeys.contains(key)) {
-          // Esiste gia un appuntamento per questo giorno, passa al successivo rispettando periodicita
           candidata = _aggiungiPeriodicita(candidata, periodicita);
           continue;
         }
 
-        final slotResult = _trovaSlotLibero(medico, candidata, occupazione, fasceMedico);
+        final slotResult = _trovaSlotLibero(medico, candidata, occupazione, fasceUtilizzabili);
         if (slotResult != null) {
           final giorno = candidata.dateOnly;
           final fasciaIndice = slotResult.fasciaIndice; // 0-based index
           // Trova la fascia utilizzata per ottenere l'ID
-          final fasciaUtilizzata = fasceMedico.firstWhere(
+          final fasciaUtilizzata = fasceUtilizzabili.firstWhere(
               (f) => f.nr == slotResult.fasciaIndice + 1,
-              orElse: () => fasceMedico.isNotEmpty ? fasceMedico.first : _fasciaVuota);
+              orElse: () => fasceUtilizzabili.isNotEmpty ? fasceUtilizzabili.first : _fasciaVuota);
           final durataVisita = fasciaUtilizzata.tempoVisitaMinuti ?? 30;
 
           result.add(CalendarioAppuntamento(
@@ -236,7 +262,7 @@ class CalendarScheduler {
         } else {
           // Nessun slot disponibile per questa data (medico non riceve in questo giorno o tutti gli slot sono occupati)
           // Trova il prossimo giorno valido per il medico
-          final prossimo = _trovaProssimoGiornoValido(medico, candidata, occupazione, rangeEnd, fasceMedico);
+          final prossimo = _trovaProssimoGiornoValido(medico, candidata, occupazione, rangeEnd, fasceUtilizzabili);
           // Difesa: se per qualche motivo prossimo <= candidata, forziamo +1 giorno
           // per evitare loop infinito
           if (!prossimo.isAfter(candidata)) {

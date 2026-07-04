@@ -78,7 +78,8 @@
       "Bash(pip install *)",
       "Bash(python *)",
       "Bash(powershell *)",
-      "PowerShell(dart analyze *)"
+      "PowerShell(dart analyze *)",
+      "Skill(claude-api)"
     ]
   }
 }

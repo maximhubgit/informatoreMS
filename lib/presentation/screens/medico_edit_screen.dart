@@ -256,11 +256,25 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
             }
           }
 
+          // Colore sfondo diverso per fasce disattivate (isFittizia)
+          final cardColor = fascia.isFittizia
+              ? Colors.grey.shade300
+              : Theme.of(context).colorScheme.surface;
+
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
+            color: cardColor,
             child: ExpansionTile(
-              title: Text(
-                '${fascia.inizio.formatTime()} - ${fascia.fine.formatTime()}${fascia.nr == 0 ? ' (principale)' : ' (nr=${fascia.nr})'}',
+              title: Row(
+                children: [
+                  if (fascia.isFittizia) ...[
+                    Icon(Icons.visibility_off_rounded, size: 16, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(
+                    '${fascia.inizio.formatTime()} - ${fascia.fine.formatTime()}${fascia.nr == 0 ? ' (principale)' : ' (nr=${fascia.nr})'}${fascia.isFittizia ? ' (disattivata)' : ''}',
+                  ),
+                ],
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,6 +290,8 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                     Text(
                       '${distrettoLabel != null ? 'Distretto: $distrettoLabel' : ''}${distrettoLabel != null && zonaLabel != null ? ' • ' : ''}${zonaLabel != null ? 'Zona: $zonaLabel' : ''}',
                       style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ),
@@ -504,6 +520,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
         String? struttura;
         String? indirizzo;
         int? tempoVisitaMinuti;
+        bool isDisattivata = false;
 
         return AlertDialog(
           title: const Text('Dettagli fascia'),
@@ -520,11 +537,17 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                     distrettiAsync.when(
                       data: (distretti) => DropdownButtonFormField<int>(
                         value: selectedDistretto,
+                        isExpanded: true,
                         decoration: const InputDecoration(labelText: 'Distretto'),
-                        items: distretti.map((d) => DropdownMenuItem(
-                              value: d.codice,
-                              child: Text(d.campoDescrittivo),
-                            )).toList(),
+                        items: distretti.map((d) {
+                              final label = d.campoDescrittivo.length > 20
+                                  ? '${d.campoDescrittivo.substring(0, 20)}...'
+                                  : d.campoDescrittivo;
+                              return DropdownMenuItem(
+                                value: d.codice,
+                                child: Text(label),
+                              );
+                            }).toList(),
                         onChanged: (v) => selectedDistretto = v,
                         validator: (v) => v == null ? 'Seleziona un distretto' : null,
                       ),
@@ -592,6 +615,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                     'struttura': struttura,
                     'indirizzo': indirizzo,
                     'tempoVisitaMinuti': tempoVisitaMinuti,
+                    'isFittizia': isDisattivata,
                   });
                 }
               },
@@ -614,6 +638,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
         String? indirizzo;
         int? tempoVisitaMinuti;
         List<GiornoSettimana> giorniSelezionati = [];
+        bool isDisattivata = false;
 
         return AlertDialog(
           title: const Text('Dettagli fascia principale'),
@@ -630,11 +655,17 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                     distrettiAsync.when(
                       data: (distretti) => DropdownButtonFormField<int>(
                         value: selectedDistretto,
+                        isExpanded: true,
                         decoration: const InputDecoration(labelText: 'Distretto'),
-                        items: distretti.map((d) => DropdownMenuItem(
-                              value: d.codice,
-                              child: Text(d.campoDescrittivo),
-                            )).toList(),
+                        items: distretti.map((d) {
+                              final label = d.campoDescrittivo.length > 20
+                                  ? '${d.campoDescrittivo.substring(0, 20)}...'
+                                  : d.campoDescrittivo;
+                              return DropdownMenuItem(
+                                value: d.codice,
+                                child: Text(label),
+                              );
+                            }).toList(),
                         onChanged: (v) => selectedDistretto = v,
                       ),
                       loading: () => const LinearProgressIndicator(),
@@ -728,6 +759,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                     'indirizzo': indirizzo,
                     'tempoVisitaMinuti': tempoVisitaMinuti,
                     'giorniSettimana': giorniSelezionati.isEmpty ? null : giorniSelezionati,
+                    'isFittizia': isDisattivata,
                   });
                 }
               },
@@ -767,6 +799,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
 
         // Giorni della settimana
         final giorniSelezionati = List<GiornoSettimana>.from(fascia.giorniSettimana ?? GiornoSettimana.values);
+        bool isDisattivata = fascia.isFittizia;
 
         return AlertDialog(
           title: const Text('Modifica fascia'),
@@ -779,14 +812,36 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Switch Disattivata con StatefulBuilder per aggiornare UI
+                    StatefulBuilder(
+                      builder: (context, setDialogState) {
+                        return SwitchListTile(
+                          title: const Text('Disattivata'),
+                          subtitle: const Text('Fascia segnaposto, non considerata nel calendario'),
+                          value: isDisattivata,
+                          onChanged: (v) {
+                            setDialogState(() {
+                              isDisattivata = v;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
                     distrettiAsync.when(
                       data: (distretti) => DropdownButtonFormField<int>(
                         value: selectedDistretto,
                         decoration: const InputDecoration(labelText: 'Distretto'),
-                        items: distretti.map((d) => DropdownMenuItem(
-                              value: d.codice,
-                              child: Text(d.campoDescrittivo),
-                            )).toList(),
+                        isExpanded: true,
+                        items: distretti.map((d) {
+                              final label = d.campoDescrittivo.length > 20
+                                  ? '${d.campoDescrittivo.substring(0, 20)}...'
+                                  : d.campoDescrittivo;
+                              return DropdownMenuItem(
+                                value: d.codice,
+                                child: Text(label),
+                              );
+                            }).toList(),
                         onChanged: (v) => selectedDistretto = v,
                       ),
                       loading: () => const LinearProgressIndicator(),
@@ -880,6 +935,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                     'indirizzo': indirizzo,
                     'tempoVisitaMinuti': tempoVisitaMinuti,
                     'giorniSettimana': giorniSelezionati.isEmpty ? null : giorniSelezionati,
+                    'isFittizia': isDisattivata,
                   });
                 }
               },
@@ -901,6 +957,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
           indirizzo: result['indirizzo'] as String?,
           tempoVisitaMinuti: result['tempoVisitaMinuti'] as int?,
           giorniSettimana: result['giorniSettimana'] as List<GiornoSettimana>?,
+          isFittizia: result['isFittizia'] as bool? ?? false,
         );
       });
     }

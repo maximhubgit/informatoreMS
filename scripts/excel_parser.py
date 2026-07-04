@@ -56,6 +56,11 @@ class FasciaRecord:
     zona_id: Optional[str]        # None = verrà risolto dopo lookup zone
     struttura: Optional[str]
     indirizzo: Optional[str]
+    is_fittizia: bool = False     # True = fascia "segnaposto" 00:00-00:00 domenica
+                                  # usata solo per conservare i dati anagrafici
+                                  # (asl, distretto, zona, struttura, indirizzo) di
+                                  # un medico che non ha orari reali. Esclusa dalla
+                                  # pianificazione dello scheduler.
 
 
 @dataclass
@@ -112,6 +117,81 @@ ZONE_COLOR_PALETTE = [
     "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9",
     "#F8B500", "#52B788",
 ]
+
+# Default per medici il cui indirizzo inizia con "Policlinico" (es. SUN,
+# Argenziano, Federico II). Per questi medici non e' specificata la zona
+# nel foglio, ma sappiamo che ricadono tutti nel distretto 27.
+DISTRETTO_POLICLINICO = 27         # "ZONA ARENELLA - VOMERO - RIONE ALTO"
+ZONA_POLICLINICO = "Arenella"
+STRUTTURA_POLICLINICO = "Policlinico"
+POLICLINICO_PREFIX = "policlinico"  # case-insensitive
+
+
+def _applica_logica_policlinico(
+    indirizzo: Optional[str],
+    struttura: Optional[str],
+    zona_name: str,
+    distretto_id: int,
+) -> tuple[Optional[str], Optional[str], str, int]:
+    """Se l'indirizzo inizia con 'Policlinico', applica i default di sede.
+
+    Regole:
+    - struttura = 'Policlinico' se non gia' valorizzata
+    - zona = 'Arenella' se la zona attuale e' vuota o '(senza zona)'
+    - distretto_id = 27 (Arenella-Vomero-Rione Alto)
+    Altrimenti ritorna i valori invariati.
+    """
+    if indirizzo and indirizzo.lower().startswith(POLICLINICO_PREFIX):
+        new_struttura = struttura or STRUTTURA_POLICLINICO
+        new_zona = zona_name if zona_name and zona_name != "(senza zona)" else ZONA_POLICLINICO
+        return (indirizzo, new_struttura, new_zona, DISTRETTO_POLICLINICO)
+    return (indirizzo, struttura, zona_name, distretto_id)
+
+
+def _aggiungi_fascia_fittizia(
+    medico: MedicoRecord,
+    indirizzi_rows: list[str],
+    strutture_rows: list[str],
+    zone_rows: list[str],
+    current_distretto_code: Optional[int],
+    zone_seen: dict[str, int],
+    result: ParseResult,
+) -> None:
+    """Crea una fascia 00:00-00:00 domenica per conservare i dati anagrafici.
+
+    Usata per medici che non hanno prodotto fasce reali (celle giorni vuote
+    o orari non decifrabili): senza questa fascia, ASL/distretto/zona/
+    struttura/indirizzo verrebbero persi. La fascia fittizia ha
+    is_fittizia=True cosi' lo scheduler la salta.
+    """
+    indirizzo = indirizzi_rows[0].strip() if indirizzi_rows else None
+    struttura = strutture_rows[0].strip() if strutture_rows else None
+    zona_name = zone_rows[0].strip() if zone_rows else None
+    if not zona_name:
+        zona_name = "(senza zona)"
+
+    indirizzo, struttura, zona_name, distretto_id = _applica_logica_policlinico(
+        indirizzo, struttura, zona_name, current_distretto_code or 0,
+    )
+
+    # Registra la zona (potrebbe essere "Arenella" per Policlinico)
+    k = zona_name.lower()
+    if k not in zone_seen:
+        zone_seen[k] = len(result.zone)
+        result.zone.append(ZonaRecord(
+            nome=zona_name, colore_hex=_assign_zone_color(len(result.zone))))
+
+    medico.fasce.append(FasciaRecord(
+        nr=0,
+        minuti_inizio=0,
+        minuti_fine=0,
+        giorni_settimana=["domenica"],
+        distretto_id=distretto_id,
+        zona_id=zone_seen[k],
+        struttura=struttura,
+        indirizzo=indirizzo,
+        is_fittizia=True,
+    ))
 
 
 # ----------------------------------------------------------------------------
@@ -464,7 +544,7 @@ def parse_excel(
         strutture_rows = _split_lines_kept(c10)
         zone_rows = _split_lines_kept(c11)
 
-        slots: list[tuple[str, int, int, Optional[str], Optional[str], str]] = []
+        slots: list[tuple[str, int, int, Optional[str], Optional[str], str, int]] = []
         # Tracciamento per warning granulari:
         righe_non_decifrabili: list[tuple[str, str]] = []  # (giorno, testo)
         celle_giorno_vuote = 0
@@ -514,11 +594,18 @@ def parse_excel(
                              if row_n < len(strutture_rows) else "")
                 zona_name = (zone_rows[row_n].strip()
                              if row_n < len(zone_rows) else "")
+                # Default Policlinico (SUN, Argenziano, ecc.): se l'indirizzo
+                # inizia con "Policlinico", struttura/zona/distretto prendono
+                # i valori standard del Policlinico SUN anche se non sono
+                # specificati nel foglio.
+                indirizzo, struttura, zona_name, distretto_id = _applica_logica_policlinico(
+                    indirizzo or None, struttura or None,
+                    zona_name or "(senza zona)",
+                    current_distretto_code or 0,
+                )
                 slots.append((
                     giorno_name, mi, mf,
-                    indirizzo or None,
-                    struttura or None,
-                    zona_name or "(senza zona)",
+                    indirizzo, struttura, zona_name, distretto_id,
                 ))
 
         # === Warning granulari ===
@@ -536,30 +623,41 @@ def parse_excel(
                 result.warnings.append(
                     f"R{row_idx}: {nome} ha {len(righe_non_decifrabili)} orari non decifrabili - {_fmt_non_decifrabili()}"
                 )
+
+            # Crea una fascia fittizia 00:00-00:00 domenica per conservare i
+            # dati anagrafici (asl, distretto, zona, struttura, indirizzo) del
+            # medico, anche se non ha orari reali. Lo scheduler la escludera'
+            # (campo is_fittizia=True).
+            _aggiungi_fascia_fittizia(
+                medico, indirizzi_rows, strutture_rows, zone_rows,
+                current_distretto_code, zone_seen, result,
+            )
         else:
             # Registra le zone effettivamente usate in `result.zone`
-            for _, _, _, _, _, zn in slots:
+            for _, _, _, _, _, zn, _ in slots:
                 k = zn.lower()
                 if k not in zone_seen:
                     zone_seen[k] = len(result.zone)
                     result.zone.append(ZonaRecord(
                         nome=zn, colore_hex=_assign_zone_color(len(result.zone))))
 
-            # Merge: stessa (orario, indirizzo, struttura, zona) → giorni uniti
-            merged: dict[tuple[int, int, Optional[str], Optional[str], str], list[str]] = {}
-            for giorno_name, mi, mf, indirizzo, struttura, zn in slots:
-                k = (mi, mf, indirizzo, struttura, zn.lower())
+            # Merge: stessa (orario, indirizzo, struttura, zona, distretto)
+            # → giorni uniti (NB: distretto e' parte della chiave per gestire
+            # il caso di un medico con sedi in distretti diversi).
+            merged: dict[tuple[int, int, Optional[str], Optional[str], str, int], list[str]] = {}
+            for giorno_name, mi, mf, indirizzo, struttura, zn, distretto_id in slots:
+                k = (mi, mf, indirizzo, struttura, zn.lower(), distretto_id)
                 if giorno_name not in merged.setdefault(k, []):
                     merged[k].append(giorno_name)
 
             nr_counter = 0
-            for (mi, mf, indirizzo, struttura, zn_lower), giorni in merged.items():
+            for (mi, mf, indirizzo, struttura, zn_lower, distretto_id), giorni in merged.items():
                 medico.fasce.append(FasciaRecord(
                     nr=nr_counter,
                     minuti_inizio=mi,
                     minuti_fine=mf,
                     giorni_settimana=giorni,
-                    distretto_id=current_distretto_code or 0,
+                    distretto_id=distretto_id,
                     zona_id=zone_seen[zn_lower],  # placeholder, verra' risolto dopo insert zone
                     struttura=struttura,
                     indirizzo=indirizzo,

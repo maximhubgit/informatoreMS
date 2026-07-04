@@ -145,6 +145,8 @@ def main() -> int:
             ws.cell(row_idx, 13, prodotti)
             ws.cell(row_idx, 14, annotazioni)
             row_idx += 1
+            # Riga vuota di separazione
+            row_idx += 1
             continue
 
         for fascia in fasce:
@@ -165,27 +167,35 @@ def main() -> int:
             giorni = fascia.get("giorniSettimana") or []
             # Se giorni e' vuoto o null, espandiamo in tutti i 7 giorni
             if not giorni:
-                giorni = list(DAY_LABELS.keys())
+                giorno_str = "Tutti i giorni"
+            else:
+                # Uniamo i giorni in un'unica cella separati da "-"
+                # (es. "Lunedì-Martedì-Giovedì"). L'utente vuole che una
+                # stessa fascia che si ripete su piu' giorni sia riportata
+                # in un'unica riga.
+                giorno_str = "-".join(DAY_LABELS.get(g, g) for g in giorni)
 
             min_inizio = fascia.get("minutiInizio", 0)
             min_fine = fascia.get("minutiFine", 0)
 
-            for giorno in giorni:
-                ws.cell(row_idx, 1, asl_desc)
-                ws.cell(row_idx, 2, distretto_desc)
-                ws.cell(row_idx, 3, nr_distretto)
-                ws.cell(row_idx, 4, medico_nome)
-                ws.cell(row_idx, 5, spec_nome)
-                ws.cell(row_idx, 6, fascia.get("indirizzo", "") or "")
-                ws.cell(row_idx, 7, fascia.get("struttura", "") or "")
-                ws.cell(row_idx, 8, zona_nome)
-                ws.cell(row_idx, 9, DAY_LABELS.get(giorno, giorno))
-                ws.cell(row_idx, 10, minutes_to_hhmm(min_inizio))
-                ws.cell(row_idx, 11, minutes_to_hhmm(min_fine))
-                ws.cell(row_idx, 12, telefono)
-                ws.cell(row_idx, 13, prodotti)
-                ws.cell(row_idx, 14, annotazioni)
-                row_idx += 1
+            ws.cell(row_idx, 1, asl_desc)
+            ws.cell(row_idx, 2, distretto_desc)
+            ws.cell(row_idx, 3, nr_distretto)
+            ws.cell(row_idx, 4, medico_nome)
+            ws.cell(row_idx, 5, spec_nome)
+            ws.cell(row_idx, 6, fascia.get("indirizzo", "") or "")
+            ws.cell(row_idx, 7, fascia.get("struttura", "") or "")
+            ws.cell(row_idx, 8, zona_nome)
+            ws.cell(row_idx, 9, giorno_str)
+            ws.cell(row_idx, 10, minutes_to_hhmm(min_inizio))
+            ws.cell(row_idx, 11, minutes_to_hhmm(min_fine))
+            ws.cell(row_idx, 12, telefono)
+            ws.cell(row_idx, 13, prodotti)
+            ws.cell(row_idx, 14, annotazioni)
+            row_idx += 1
+
+        # Riga vuota di separazione al cambio medico
+        row_idx += 1
 
     # Larghezze colonne
     widths = {

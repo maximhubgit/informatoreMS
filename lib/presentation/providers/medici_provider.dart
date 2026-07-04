@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:informatoreMS/core/models/distretto.dart';
+import 'package:informatoreMS/presentation/providers/distretto_provider.dart';
 import 'package:informatoreMS/core/models/fascia_oraria.dart';
 import 'package:informatoreMS/core/models/medico.dart';
 import 'package:informatoreMS/data/repositories/fascia_oraria_repository.dart';
@@ -209,6 +211,23 @@ final fasciaPrincipaleProvider = Provider<Map<String, FasciaOraria>>((ref) {
   return {
     for (final f in fasce)
       if (f.nr == 0) f.idMedico: f,
+  };
+});
+
+/// Mappa memoizzata medicoId -> Distretto della fascia principale (nr=0).
+/// Utile per filtri e ordinamento basati su distretto.
+final distrettoPerMedicoProvider = Provider<Map<String, Distretto>>((ref) {
+  final fasceAsync = ref.watch(fasceOrarieProvider);
+  final fasce = fasceAsync.valueOrNull ?? const <FasciaOraria>[];
+  final distrettoByCodice = ref.watch(distrettoByCodiceProvider);
+  return {
+    for (final f in fasce)
+      if (f.nr == 0) f.idMedico: distrettoByCodice[f.distrettoId] ?? const Distretto(
+        codice: 0,
+        nrDistretto: 0,
+        descrizione: 'Sconosciuto',
+        codiceAsl: 0,
+      ),
   };
 });
 

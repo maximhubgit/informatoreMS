@@ -70,6 +70,7 @@ def fascia_to_doc(f: FasciaRecord, id_medico: str, zona_id_resolved: str) -> dic
         "indirizzo": f.indirizzo,
         "tempoVisitaMinuti": None,
         "deleted": False,
+        "isFittizia": getattr(f, "is_fittizia", False),
     }
 
 

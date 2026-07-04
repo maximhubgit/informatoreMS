@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:informatoreMS/core/extensions/date_time_extension.dart';
 import 'package:informatoreMS/core/models/calendario_appuntamento.dart';
+import 'package:informatoreMS/core/models/fascia_oraria.dart';
+import 'package:informatoreMS/core/models/zona.dart';
 import 'package:informatoreMS/presentation/providers/calendario_provider.dart';
 import 'package:informatoreMS/presentation/providers/medici_provider.dart';
+import 'package:informatoreMS/presentation/providers/zone_provider.dart';
 import 'package:informatoreMS/presentation/screens/storico_full_screen.dart';
 import 'package:informatoreMS/presentation/screens/medici_list_screen.dart';
 import 'package:informatoreMS/presentation/screens/prossimi_appuntamenti_screen.dart';
@@ -18,14 +21,15 @@ class DashboardScreen extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'Medical Calendar',
+                'BIOGENA',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary,
                     ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
@@ -62,60 +66,139 @@ class DashboardScreen extends ConsumerWidget {
     return Consumer(
       builder: (context, ref, _) {
         final mediciAsync = ref.watch(mediciProvider);
+        final fasceAsync = ref.watch(fasceOrarieProvider);
+        final zoneAsync = ref.watch(zoneProvider);
+
         return mediciAsync.when(
-          data: (medici) => GestureDetector(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const MediciListScreen()),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.medical_services,
-                    size: 32,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${medici.length}',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
+          data: (medici) => fasceAsync.when(
+            data: (fasce) => zoneAsync.when(
+              data: (zone) {
+                // Medici attivi: hanno almeno una fascia con deleted=false e isFittizia=false
+                final fasceAttive = fasce.where((f) => !f.deleted && !f.isFittizia).toList();
+                final medicoIdsConFasciaAttiva = fasceAttive.map((f) => f.idMedico).toSet();
+                final mediciAttivi = medici.where((m) => medicoIdsConFasciaAttiva.contains(m.id)).length;
+
+                // Zone attive: zone collegate alle sole fascie attive
+                final zoneIdsAttive = fasceAttive.map((f) => f.zonaId).toSet();
+                final zoneAttive = zone.where((z) => zoneIdsAttive.contains(z.id)).length;
+
+                // Distretti attivi: distretti legati alle zone attive
+                final distrettiAttivi = fasceAttive.map((f) => f.distrettoId).toSet().length;
+
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const MediciListScreen()),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Intestazione con nr totale medici
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.medical_services,
+                              size: 32,
                               color: Theme.of(context).colorScheme.onPrimaryContainer,
                             ),
-                      ),
-                      Text(
-                        'Medici',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            const SizedBox(width: 12),
+                            Text(
+                              '${medici.length}',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Medici',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        // 3 righe di statistiche
+                        _buildStatItem(
+                          label: 'Medici attivi',
+                          value: '$mediciAttivi',
+                          context: context,
+                          isSecondary: true,
+                        ),
+                        _buildStatItem(
+                          label: 'Zone attive',
+                          value: '$zoneAttive',
+                          context: context,
+                          isSecondary: true,
+                        ),
+                        _buildStatItem(
+                          label: 'Distretti attivi',
+                          value: '$distrettiAttivi',
+                          context: context,
+                          isSecondary: true,
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                );
+              },
+              loading: () => const Card(child: SizedBox(height: 120)),
+              error: (_, __) => const Card(child: SizedBox(height: 120)),
             ),
+            loading: () => const Card(child: SizedBox(height: 120)),
+            error: (_, __) => const Card(child: SizedBox(height: 120)),
           ),
-          loading: () => const Card(child: SizedBox(height: 80)),
-          error: (_, __) => const Card(child: SizedBox(height: 80)),
+          loading: () => const Card(child: SizedBox(height: 120)),
+          error: (_, __) => const Card(child: SizedBox(height: 120)),
         );
       },
+    );
+  }
+
+  /// Widget per una riga di statistica nella card.
+  Widget _buildStatItem({required String label, required String value, required BuildContext context, bool isSecondary = false}) {
+    final Color textColor = isSecondary
+        ? Theme.of(context).colorScheme.onSecondaryContainer
+        : Theme.of(context).colorScheme.onPrimaryContainer;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: textColor.withValues(alpha: 0.8),
+              fontSize: 13,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -123,92 +206,138 @@ class DashboardScreen extends ConsumerWidget {
     return Consumer(
       builder: (context, ref, _) {
         final calendarioAsync = ref.watch(calendarioProvider);
-        return calendarioAsync.when(
-          data: (calendario) {
-            final annoCorrente = DateTime.now().year;
-            final trentaGiorniFa = DateTime.now().subtract(const Duration(days: 30));
+        final mediciAsync = ref.watch(mediciProvider);
+        final fasceAsync = ref.watch(fasceOrarieProvider);
 
-            final appuntamentiAnno = calendario
-                .where((s) => s.data.year == annoCorrente && s.stato == StatoCalendario.fatto)
-                .length;
+        return mediciAsync.when(
+          data: (medici) => fasceAsync.when(
+            data: (fasce) {
+              // Medici attivi: hanno almeno una fascia con deleted=false e isFittizia=false
+              final fasceAttive = fasce.where((f) => !f.deleted && !f.isFittizia).toList();
+              final medicoIdsConFasciaAttiva = fasceAttive.map((f) => f.idMedico).toSet();
+              final mediciAttivi = medici.where((m) => medicoIdsConFasciaAttiva.contains(m.id)).length;
 
-            final appuntamenti30gg = calendario
-                .where((s) =>
-                    s.data.isAfter(trentaGiorniFa) && s.stato == StatoCalendario.fatto)
-                .length;
+              // Calcolo appuntamenti previsti: (365 / 45) intero * medici attivi
+              final appuntamentiPrevisti = (365 ~/ 45) * mediciAttivi;
 
-            return GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const StoricoFullScreen()),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 12,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.event_available,
-                      size: 32,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
+              return calendarioAsync.when(
+                data: (calendario) {
+                  final adesso = DateTime.now();
+                  final annoCorrente = adesso.year;
+                  final meseCorrente = adesso.month;
+                  final settimanaCorrente = _settimanaCorrente(adesso);
+
+                  final appuntamentiAnno = calendario
+                      .where((s) =>
+                          s.data.year == annoCorrente &&
+                          s.stato == StatoCalendario.fatto)
+                      .length;
+
+                  final appuntamentiMese = calendario
+                      .where((s) =>
+                          s.data.year == annoCorrente &&
+                          s.data.month == meseCorrente &&
+                          s.stato == StatoCalendario.fatto)
+                      .length;
+
+                  final appuntamentiSettimana = calendario
+                      .where((s) =>
+                          s.data.isAfter(settimanaCorrente) &&
+                          s.stato == StatoCalendario.fatto)
+                      .length;
+
+                  final appuntamentiLabel = '$appuntamentiAnno/$appuntamentiPrevisti previsti';
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const StoricoFullScreen()),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '$appuntamentiAnno appuntamenti',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                                ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.event_available,
+                                size: 32,
+                                color: Theme.of(context).colorScheme.onSecondaryContainer,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                appuntamentiLabel,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                    ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'anno $annoCorrente',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.8),
-                            ),
+                          const SizedBox(height: 12),
+                          _buildStatItem(
+                            label: 'Anno corrente',
+                            value: '$appuntamentiAnno',
+                            context: context,
+                            isSecondary: true,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '$appuntamenti30gg ultimi 30 gg',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.8),
-                            ),
+                          _buildStatItem(
+                            label: 'Mese corrente',
+                            value: '$appuntamentiMese',
+                            context: context,
+                            isSecondary: true,
+                          ),
+                          _buildStatItem(
+                            label: 'Settimana corrente',
+                            value: '$appuntamentiSettimana',
+                            context: context,
+                            isSecondary: true,
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            );
-          },
-          loading: () => const Card(child: SizedBox(height: 80)),
-          error: (_, __) => const Card(child: SizedBox(height: 80)),
+                  );
+                },
+                loading: () => const Card(child: SizedBox(height: 120)),
+                error: (_, __) => const Card(child: SizedBox(height: 120)),
+              );
+            },
+            loading: () => const Card(child: SizedBox(height: 120)),
+            error: (_, __) => const Card(child: SizedBox(height: 120)),
+          ),
+          loading: () => const Card(child: SizedBox(height: 120)),
+          error: (_, __) => const Card(child: SizedBox(height: 120)),
         );
       },
     );
+  }
+
+  /// Calcola l'inizio della settimana corrente (lunedì).
+  DateTime _settimanaCorrente(DateTime now) {
+    final giornoSettimana = now.weekday;
+    final differenzaGiorni = giornoSettimana == 1 ? 0 : giornoSettimana - 1;
+    return DateTime(now.year, now.month, now.day - differenzaGiorni);
   }
 
   Widget _prossimiAppuntamentiCard(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
         final calendarioAsync = ref.watch(calendarioProvider);
+        final fasciaById = ref.watch(fasciaByIdProvider);
+        final zonaById = ref.watch(zonaByIdProvider);
 
         return calendarioAsync.when(
           data: (appuntamenti) {
@@ -275,7 +404,7 @@ class DashboardScreen extends ConsumerWidget {
                         itemCount: proposti.length > 5 ? 5 : proposti.length,
                         itemBuilder: (context, index) {
                           final app = proposti[index];
-                          return _buildListItem(context, app);
+                          return _buildListItem(context, app, fasciaById, zonaById);
                         },
                       ),
                   ],
@@ -290,7 +419,11 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildListItem(BuildContext context, CalendarioAppuntamento app) {
+  Widget _buildListItem(BuildContext context, CalendarioAppuntamento app, Map<String, FasciaOraria> fasciaById, Map<String, Zona> zonaById) {
+    final fascia = fasciaById[app.fasciaOrariaId ?? ''];
+    final zona = fascia != null ? zonaById[fascia.zonaId] : null;
+    final zonaNome = zona != null ? (zona.nome.length > 10 ? zona.nome.substring(0, 10) : zona.nome) : '';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -306,12 +439,21 @@ class DashboardScreen extends ConsumerWidget {
             color: app.stato.colore,
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              app.soloData.formatItalia(),
-              style: const TextStyle(fontSize: 13),
-            ),
+          Text(
+            app.soloData.formatItalia(),
+            style: const TextStyle(fontSize: 13),
           ),
+          if (zonaNome.isNotEmpty) ...[
+            const SizedBox(width: 6),
+            Text(
+              '[$zonaNome]',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+          const Spacer(),
           Text(
             app.oraFormattata,
             style: TextStyle(

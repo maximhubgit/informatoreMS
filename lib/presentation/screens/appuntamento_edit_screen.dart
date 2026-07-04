@@ -12,11 +12,13 @@ import 'package:informatoreMS/presentation/providers/medici_provider.dart';
 class AppuntamentoEditScreen extends ConsumerStatefulWidget {
   final Medico medico;
   final CalendarioAppuntamento appuntamento;
+  final bool salvaComeConcordato;
 
   const AppuntamentoEditScreen({
     super.key,
     required this.medico,
     required this.appuntamento,
+    this.salvaComeConcordato = false,
   });
 
   @override
@@ -269,9 +271,14 @@ class _AppuntamentoEditScreenState extends ConsumerState<AppuntamentoEditScreen>
       _selectedTime!.minute,
     );
 
-    await ref.read(salvaAppuntamentoProvider)(
-      widget.appuntamento.copyWith(data: nuovaData),
-    );
+    final aggiornamento = widget.appuntamento.copyWith(data: nuovaData);
+    // Se salvaComeConcordato è true e lo stato era "proposto", diventa "concordato"
+    // Altrimenti mantiene lo stato esistente (confermato, fatto, ecc.)
+    final salvataggio = widget.salvaComeConcordato && widget.appuntamento.stato == StatoCalendario.proposto
+        ? aggiornamento.copyWith(stato: StatoCalendario.concordato)
+        : aggiornamento;
+
+    await ref.read(salvaAppuntamentoProvider)(salvataggio);
 
     ref.refresh(calendarioProvider);
 

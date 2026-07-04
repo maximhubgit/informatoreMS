@@ -18,6 +18,8 @@ class ZoneSelezionateNotifier extends StateNotifier<Set<String>> {
     }
   }
 
+  void replaceAll(Set<String> nuovi) => state = {...nuovi};
+
   void clearAll() => state = {};
 
   void selectAll(List<Zona> zone) => state = zone.map((z) => z.id).toSet();

@@ -46,7 +46,7 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Concordati'),
+        title: const Text('Gestisci'),
         centerTitle: true,
         actions: [
           IconButton(
@@ -120,8 +120,8 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         children: [
-          _statusChip(label: 'Tutti', value: null),
-          _statusChip(label: 'Concordati', value: StatoCalendario.concordato, defaultSelected: true),
+          _statusChip(label: 'Tutti', value: null, defaultSelected: true),
+          _statusChip(label: 'Concordati', value: StatoCalendario.concordato),
           _statusChip(label: 'Proposti', value: StatoCalendario.proposto),
           _statusChip(label: 'Confermati', value: StatoCalendario.confermato),
           _statusChip(label: 'Fatti', value: StatoCalendario.fatto),
@@ -224,6 +224,7 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
                             builder: (_) => AppuntamentoEditScreen(
                               medico: medico,
                               appuntamento: app,
+                              salvaComeConcordato: true,
                             ),
                           ),
                         );
@@ -271,7 +272,7 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
                 setState(() {
                   _searchController.clear();
                   _searchQuery = '';
-                  _statoFilter = StatoCalendario.concordato;
+                  _statoFilter = null;
                   _rangePreset = _DateRangePreset.all;
                   _customRange = null;
                 });
@@ -289,9 +290,10 @@ class _AppuntamentiConcordatiScreenState extends ConsumerState<AppuntamentiConco
   List<CalendarioAppuntamento> _filter(List<CalendarioAppuntamento> tutti) {
     Iterable<CalendarioAppuntamento> result = tutti;
 
-    // Filtro stato (default: concordato)
-    final stato = _statoFilter ?? StatoCalendario.concordato;
-    result = result.where((a) => a.stato == stato);
+    // Filtro stato (null = tutti gli stati)
+    if (_statoFilter != null) {
+      result = result.where((a) => a.stato == _statoFilter);
+    }
 
     // Filtro range rapido
     final now = DateTime.now();

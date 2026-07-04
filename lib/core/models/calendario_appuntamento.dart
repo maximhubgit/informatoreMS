@@ -30,6 +30,17 @@ extension StatoCalendarioX on StatoCalendario {
       };
 }
 
+extension CalendarioAppuntamentoScadutoX on CalendarioAppuntamento {
+  /// Un appuntamento è "scaduto" se è concordato o confermato e la data è passata
+  /// ma non è ancora stato segnato come fatto o annullato.
+  bool get isScaduto {
+    final oggi = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    return !stato.isConcluso &&
+        (stato == StatoCalendario.concordato || stato == StatoCalendario.confermato) &&
+        soloData.isBefore(oggi);
+  }
+}
+
 /// Modello per un appuntamento nel calendario (storico + futuri + proposti).
 ///
 /// Raccoglie tutti gli appuntamenti: storico, futuri, e quelli proposti
