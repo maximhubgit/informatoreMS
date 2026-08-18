@@ -1,11 +1,12 @@
 """Entry point: esporta i dati Firebase in un file Excel long-format.
 
 Una riga = una fascia oraria di un medico, in un giorno specifico.
+Le righe sono ordinate per medico. Una riga vuota separa ogni medico.
 
 Colonne prodotte:
-- ASL | Distretto | NrDistretto | Medico | Specializzazione |
-  Indirizzo | Struttura | Zona | Giorno | OrarioInizio | OrarioFine |
-  Telefono | Prodotti | Annotazioni
+- IdFascia | Nr | IdMedico | ASL | Distretto | NrDistretto | Medico |
+  Specializzazione | Indirizzo | Struttura | Zona | Giorno |
+  OrarioInizio | OrarioFine | Telefono | Prodotti | Annotazioni
 """
 from __future__ import annotations
 
@@ -25,6 +26,9 @@ EXPORT_FILENAME_SUFFIX = ".xlsx"
 
 
 HEADERS = [
+    "IdFascia",
+    "Nr",
+    "IdMedico",
     "ASL",
     "Distretto",
     "NrDistretto",
@@ -111,6 +115,9 @@ def main() -> int:
     ws = wb.active
     ws.title = "Esportazione"
 
+    # Ordina i medici per nome
+    medico_docs_sorted = sorted(medico_docs, key=lambda m: m.get("nome", "").lower())
+
     # Header con stile
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill("solid", fgColor="4472C4")
@@ -124,7 +131,7 @@ def main() -> int:
 
     # Righe
     row_idx = 2
-    for m in medico_docs:
+    for m in medico_docs_sorted:
         mid = m["_docId"]
         medico_nome = m.get("nome", "")
         spec_id = m.get("specializzazioneId", "")
@@ -139,11 +146,14 @@ def main() -> int:
 
         if not fasce:
             # Medico senza fasce: scrivi comunque una riga con dati minimi
-            ws.cell(row_idx, 4, medico_nome)
-            ws.cell(row_idx, 5, spec_nome)
-            ws.cell(row_idx, 12, telefono)
-            ws.cell(row_idx, 13, prodotti)
-            ws.cell(row_idx, 14, annotazioni)
+            ws.cell(row_idx, 1, "")  # IdFascia
+            ws.cell(row_idx, 2, "")  # Nr
+            ws.cell(row_idx, 3, mid)
+            ws.cell(row_idx, 6, medico_nome)
+            ws.cell(row_idx, 8, spec_nome)
+            ws.cell(row_idx, 15, telefono)
+            ws.cell(row_idx, 16, prodotti)
+            ws.cell(row_idx, 17, annotazioni)
             row_idx += 1
             # Riga vuota di separazione
             row_idx += 1
@@ -178,20 +188,23 @@ def main() -> int:
             min_inizio = fascia.get("minutiInizio", 0)
             min_fine = fascia.get("minutiFine", 0)
 
-            ws.cell(row_idx, 1, asl_desc)
-            ws.cell(row_idx, 2, distretto_desc)
-            ws.cell(row_idx, 3, nr_distretto)
-            ws.cell(row_idx, 4, medico_nome)
-            ws.cell(row_idx, 5, spec_nome)
-            ws.cell(row_idx, 6, fascia.get("indirizzo", "") or "")
-            ws.cell(row_idx, 7, fascia.get("struttura", "") or "")
-            ws.cell(row_idx, 8, zona_nome)
-            ws.cell(row_idx, 9, giorno_str)
-            ws.cell(row_idx, 10, minutes_to_hhmm(min_inizio))
-            ws.cell(row_idx, 11, minutes_to_hhmm(min_fine))
-            ws.cell(row_idx, 12, telefono)
-            ws.cell(row_idx, 13, prodotti)
-            ws.cell(row_idx, 14, annotazioni)
+            ws.cell(row_idx, 1, fascia.get("_docId", ""))
+            ws.cell(row_idx, 2, fascia.get("nr", ""))
+            ws.cell(row_idx, 3, mid)
+            ws.cell(row_idx, 4, asl_desc)
+            ws.cell(row_idx, 5, distretto_desc)
+            ws.cell(row_idx, 6, nr_distretto)
+            ws.cell(row_idx, 7, medico_nome)
+            ws.cell(row_idx, 8, spec_nome)
+            ws.cell(row_idx, 9, fascia.get("indirizzo", "") or "")
+            ws.cell(row_idx, 10, fascia.get("struttura", "") or "")
+            ws.cell(row_idx, 11, zona_nome)
+            ws.cell(row_idx, 12, giorno_str)
+            ws.cell(row_idx, 13, minutes_to_hhmm(min_inizio))
+            ws.cell(row_idx, 14, minutes_to_hhmm(min_fine))
+            ws.cell(row_idx, 15, telefono)
+            ws.cell(row_idx, 16, prodotti)
+            ws.cell(row_idx, 17, annotazioni)
             row_idx += 1
 
         # Riga vuota di separazione al cambio medico
@@ -199,20 +212,23 @@ def main() -> int:
 
     # Larghezze colonne
     widths = {
-        1: 25,  # ASL
-        2: 40,  # Distretto
-        3: 8,   # NrDistretto
-        4: 30,  # Medico
-        5: 18,  # Specializzazione
-        6: 35,  # Indirizzo
-        7: 30,  # Struttura
-        8: 18,  # Zona
-        9: 12,  # Giorno
-        10: 12, # OrarioInizio
-        11: 12, # OrarioFine
-        12: 30, # Telefono
-        13: 35, # Prodotti
-        14: 35, # Annotazioni
+        1: 22,  # IdFascia
+        2: 6,   # Nr
+        3: 20,  # IdMedico
+        4: 25,  # ASL
+        5: 40,  # Distretto
+        6: 8,   # NrDistretto
+        7: 30,  # Medico
+        8: 18,  # Specializzazione
+        9: 35,  # Indirizzo
+        10: 30, # Struttura
+        11: 18, # Zona
+        12: 12, # Giorno
+        13: 12, # OrarioInizio
+        14: 12, # OrarioFine
+        15: 30, # Telefono
+        16: 35, # Prodotti
+        17: 35, # Annotazioni
     }
     for col, width in widths.items():
         ws.column_dimensions[get_column_letter(col)].width = width

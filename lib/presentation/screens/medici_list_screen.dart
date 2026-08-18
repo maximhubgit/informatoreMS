@@ -7,11 +7,13 @@ import 'package:informatoreMS/core/models/medico.dart';
 import 'package:informatoreMS/core/models/zona.dart';
 import 'package:informatoreMS/presentation/providers/calendario_provider.dart';
 import 'package:informatoreMS/presentation/providers/distretto_provider.dart';
-import 'package:informatoreMS/presentation/providers/distritti_selezionati_provider.dart';
+import 'package:informatoreMS/presentation/providers/distretti_selezionati_provider.dart';
 import 'package:informatoreMS/presentation/providers/medici_provider.dart';
 import 'package:informatoreMS/presentation/providers/specializzazione_provider.dart';
 import 'package:informatoreMS/presentation/providers/zone_provider.dart';
 import 'package:informatoreMS/presentation/providers/zone_selezionate_provider.dart';
+import 'package:informatoreMS/presentation/providers/area_provider.dart';
+import 'package:informatoreMS/presentation/widgets/triple_filter_row.dart';
 import 'medico_edit_screen.dart';
 
 enum OrdinamentoMedico { alfabetico, prossimaVisita, distretto }
@@ -85,8 +87,8 @@ class _MediciListScreenState extends ConsumerState<MediciListScreen> {
         children: [
           // Barra di ricerca
           _buildSearchBar(),
-          // Filtri distretto e zona
-          _buildFilterRow(ref),
+          // Filtri distretto / zona / area
+          const TripleFilterRow(),
           const Divider(height: 1),
           // Lista medici
           Expanded(
@@ -112,22 +114,7 @@ class _MediciListScreenState extends ConsumerState<MediciListScreen> {
                   itemCount: mediciOrdinati.length,
                   itemBuilder: (context, index) {
                     final medico = mediciOrdinati[index];
-                    return Dismissible(
-                      key: Key(medico.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        color: Colors.red,
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 24),
-                        child: const Icon(Icons.delete, color: Colors.white),
-                      ),
-                      onDismissed: (_) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Medico eliminato')),
-                        );
-                      },
-                      child: _buildMedicoTile(context, medico, ref),
-                    );
+                    return _buildMedicoTile(context, medico, ref);
                   },
                 );
               },
@@ -147,7 +134,7 @@ class _MediciListScreenState extends ConsumerState<MediciListScreen> {
         controller: _searchController,
         onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
         decoration: InputDecoration(
-          hintText: 'Cerca medico, indirizzo, zona, telefono...',
+          hintText: 'Cerca medico, indirizzo, zona, area, telefono...',
           prefixIcon: const Icon(Icons.search_rounded),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
@@ -179,54 +166,22 @@ class _MediciListScreenState extends ConsumerState<MediciListScreen> {
     );
   }
 
-  Widget _buildFilterRow(WidgetRef ref) {
-    final distrittiSelezionati = ref.watch(distrittiSelezionatiProvider);
-    final zoneSelezionate = ref.watch(zoneSelezionateProvider);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Row(
-        children: [
-          // Dropdown distretti
-          Expanded(
-            child: _DistrettoDropdown(
-              selectedCodes: distrittiSelezionati,
-              onSelectionChanged: (Set<int> newSelection) {
-                ref.read(distrittiSelezionatiProvider.notifier).replaceAll(newSelection);
-              },
-              onClear: () => ref.read(distrittiSelezionatiProvider.notifier).clearAll(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Dropdown zone
-          Expanded(
-            child: _ZonaDropdown(
-              selectedIds: zoneSelezionate,
-              onSelectionChanged: (Set<String> newSelection) {
-                ref.read(zoneSelezionateProvider.notifier).replaceAll(newSelection);
-              },
-              onClear: () => ref.read(zoneSelezionateProvider.notifier).clearAll(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Filtra i medici in base a ricerca, distretti selezionati e zone selezionate.
+  /// Filtra i medici in base a ricerca, distretti, zone e aree selezionate.
   List<Medico> _filtraMedici(List<Medico> medici) {
-    final distrittiSelezionati = ref.watch(distrittiSelezionatiProvider);
+    final distrettiSelezionati = ref.watch(distrettiSelezionatiProvider);
     final zoneSelezionate = ref.watch(zoneSelezionateProvider);
+    final areeSelezionate = ref.watch(areeSelezionateProvider);
     final fasciaPrincipaleMap = ref.watch(fasciaPrincipaleProvider);
     final zoneMap = ref.watch(zonaByIdProvider);
+    final areaById = ref.watch(areaByIdProvider);
 
     Iterable<Medico> result = medici;
 
     // Filtro per distretti (usa la mappa O(1))
-    if (distrittiSelezionati.isNotEmpty) {
+    if (distrettiSelezionati.isNotEmpty) {
       result = result.where((m) {
         final fascia = fasciaPrincipaleMap[m.id];
-        return fascia != null && distrittiSelezionati.contains(fascia.distrettoId);
+        return fascia != null && distrettiSelezionati.contains(fascia.distrettoId);
       });
     }
 
@@ -238,17 +193,30 @@ class _MediciListScreenState extends ConsumerState<MediciListScreen> {
       });
     }
 
+    // Filtro per aree (usa la mappa O(1))
+    if (areeSelezionate.isNotEmpty) {
+      result = result.where((m) {
+        final fascia = fasciaPrincipaleMap[m.id];
+        return fascia != null &&
+            fascia.idArea != null &&
+            areeSelezionate.contains(fascia.idArea);
+      });
+    }
+
     // Filtro ricerca testo
     if (_searchQuery.isNotEmpty) {
       result = result.where((m) {
         final fascia = fasciaPrincipaleMap[m.id];
         final zona = fascia != null ? zoneMap[fascia.zonaId] : null;
+        final area =
+            fascia?.idArea != null ? areaById[fascia!.idArea]?.nome ?? '' : '';
         final haystack = [
           m.nome,
           m.telefono ?? '',
           fascia?.struttura ?? '',
           fascia?.indirizzo ?? '',
           zona?.nome ?? '',
+          area,
         ].join(' ').toLowerCase();
         return haystack.contains(_searchQuery);
       });
@@ -292,11 +260,13 @@ class _MediciListScreenState extends ConsumerState<MediciListScreen> {
   }
 
   Widget _emptyState(BuildContext context) {
-    final distrittiSelezionati = ref.watch(distrittiSelezionatiProvider);
+    final distrettiSelezionati = ref.watch(distrettiSelezionatiProvider);
     final zoneSelezionate = ref.watch(zoneSelezionateProvider);
+    final areeSelezionate = ref.watch(areeSelezionateProvider);
 
-    final bool hasFiltri = distrittiSelezionati.isNotEmpty ||
+    final bool hasFiltri = distrettiSelezionati.isNotEmpty ||
         zoneSelezionate.isNotEmpty ||
+        areeSelezionate.isNotEmpty ||
         _searchQuery.isNotEmpty;
 
     return Center(
@@ -324,8 +294,9 @@ class _MediciListScreenState extends ConsumerState<MediciListScreen> {
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: () {
-                ref.read(distrittiSelezionatiProvider.notifier).clearAll();
+                ref.read(distrettiSelezionatiProvider.notifier).clearAll();
                 ref.read(zoneSelezionateProvider.notifier).clearAll();
+                ref.read(areeSelezionateProvider.notifier).clearAll();
                 _searchController.clear();
                 setState(() => _searchQuery = '');
               },
@@ -390,222 +361,6 @@ class _MediciListScreenState extends ConsumerState<MediciListScreen> {
           );
         },
       ),
-    );
-  }
-}
-
-// Dropdown multiselezione per i distretti
-class _DistrettoDropdown extends ConsumerWidget {
-  final Set<int> selectedCodes;
-  final ValueChanged<Set<int>> onSelectionChanged;
-  final VoidCallback onClear;
-
-  const _DistrettoDropdown({
-    required this.selectedCodes,
-    required this.onSelectionChanged,
-    required this.onClear,
-  });
-
-  String _truncateLabel(String text, int maxLength) {
-    // Rimuove i ritorni a capo e tronca
-    final cleanText = text.replaceAll('\n', ' ').replaceAll('\r', '');
-    return cleanText.length <= maxLength ? cleanText : '${cleanText.substring(0, maxLength)}...';
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return InkWell(
-      onTap: () => _showMultiSelectDialog(context, ref),
-      borderRadius: BorderRadius.circular(8),
-      child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: 'Distretti',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.location_city_rounded),
-          suffixIcon: Icon(Icons.arrow_drop_down_rounded),
-        ),
-        child: Text(
-          selectedCodes.isEmpty
-              ? 'Seleziona distretti'
-              : '${selectedCodes.length} selezionati',
-          style: TextStyle(
-            color: selectedCodes.isEmpty
-                ? Theme.of(context).colorScheme.onSurfaceVariant
-                : Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showMultiSelectDialog(BuildContext context, WidgetRef ref) async {
-    final distrittiAsync = ref.watch(distrettoProvider);
-    final selected = Set<int>.from(selectedCodes);
-
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Seleziona distretti'),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: distrittiAsync.when(
-                  data: (distretti) => SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: distretti.map((d) {
-                        final isSelected = selected.contains(d.codice);
-                        return CheckboxListTile(
-                          title: Text(_truncateLabel(d.campoDescrittivo, 20)),
-                          value: isSelected,
-                          onChanged: (v) {
-                            setStateDialog(() {
-                              if (v == true) {
-                                selected.add(d.codice);
-                              } else {
-                                selected.remove(d.codice);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (_, __) => const Text('Errore caricamento distretti'),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    onClear();
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text('Pulisci'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Annulla'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    onSelectionChanged(selected);
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text('Applica'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-// Dropdown multiselezione per le zone
-class _ZonaDropdown extends ConsumerWidget {
-  final Set<String> selectedIds;
-  final ValueChanged<Set<String>> onSelectionChanged;
-  final VoidCallback onClear;
-
-  const _ZonaDropdown({
-    required this.selectedIds,
-    required this.onSelectionChanged,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return InkWell(
-      onTap: () => _showMultiSelectDialog(context, ref),
-      borderRadius: BorderRadius.circular(8),
-      child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: 'Zone',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.map_rounded),
-          suffixIcon: Icon(Icons.arrow_drop_down_rounded),
-        ),
-        child: Text(
-          selectedIds.isEmpty
-              ? 'Seleziona zone'
-              : '${selectedIds.length} selezionate',
-          style: TextStyle(
-            color: selectedIds.isEmpty
-                ? Theme.of(context).colorScheme.onSurfaceVariant
-                : Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showMultiSelectDialog(BuildContext context, WidgetRef ref) async {
-    final zoneAsync = ref.watch(zoneProvider);
-    final selected = Set<String>.from(selectedIds);
-
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Seleziona zone'),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: zoneAsync.when(
-                  data: (zone) => SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: zone.map((z) {
-                        final isSelected = selected.contains(z.id);
-                        return CheckboxListTile(
-                          title: Text(z.nome),
-                          value: isSelected,
-                          onChanged: (v) {
-                            setStateDialog(() {
-                              if (v == true) {
-                                selected.add(z.id);
-                              } else {
-                                selected.remove(z.id);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (_, __) => const Text('Errore caricamento zone'),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    onClear();
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text('Pulisci'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Annulla'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    onSelectionChanged(selected);
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text('Applica'),
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 }

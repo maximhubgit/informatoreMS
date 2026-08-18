@@ -4,7 +4,6 @@ import 'package:informatoreMS/core/extensions/date_time_extension.dart';
 import 'package:informatoreMS/core/extensions/specializzazione_extension.dart';
 import 'package:informatoreMS/core/models/calendario_appuntamento.dart';
 import 'package:informatoreMS/core/models/medico.dart';
-import 'package:informatoreMS/core/models/zona.dart';
 import 'package:informatoreMS/presentation/providers/zone_provider.dart';
 import 'package:informatoreMS/presentation/providers/zone_selezionate_provider.dart';
 import 'package:informatoreMS/presentation/providers/calendario_provider.dart';
@@ -12,7 +11,8 @@ import 'package:informatoreMS/presentation/providers/medici_provider.dart';
 import 'package:informatoreMS/presentation/providers/specializzazione_provider.dart';
 import 'package:informatoreMS/presentation/providers/distretto_provider.dart';
 import 'package:informatoreMS/presentation/providers/distretti_selezionati_provider.dart';
-import 'package:informatoreMS/core/models/distretto.dart';
+import 'package:informatoreMS/presentation/providers/area_provider.dart';
+import 'package:informatoreMS/presentation/widgets/triple_filter_row.dart';
 import 'package:informatoreMS/domain/usecases/esporta_appuntamenti_usecase.dart';
 import 'package:file_saver/file_saver.dart';
 
@@ -22,9 +22,10 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final calendarioAsync = ref.watch(calendarioProvider);
-    final zoneAsync = ref.watch(zoneProvider);
     final zoneSelezionate = ref.watch(zoneSelezionateProvider);
     final distrettiSelezionati = ref.watch(distrettiSelezionatiProvider);
+    final areeSelezionate = ref.watch(areeSelezionateProvider);
+    final fasciaPrincipaleMap = ref.watch(fasciaPrincipaleProvider);
     final medicoMap = ref.watch(medicoByIdProvider);
     final zonaPerMedico = ref.watch(zonaPerMedicoProvider);
     final distrettoPerMedico = ref.watch(distrettoPerMedicoProvider);
@@ -51,12 +52,6 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              _showFilterDialog(context, ref, zoneAsync);
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.file_download),
             tooltip: 'Esporta in Excel',
             onPressed: () {
@@ -65,65 +60,77 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: calendarioAsync.when(
-        data: (appuntamenti) {
-          final bool hasFiltri = zoneSelezionate.isNotEmpty || distrettiSelezionati.isNotEmpty;
-          final proposti = appuntamenti.where((a) {
-            if (a.stato.isConcluso) return false;
-            if (!hasFiltri) return true;
-            // Filtro per zona
-            if (zoneSelezionate.isNotEmpty &&
-                !zoneSelezionate.contains(zonaPerMedico[a.medicoId])) {
-              return false;
-            }
-            // Filtro per distretto
-            if (distrettiSelezionati.isNotEmpty) {
-              final distretto = distrettoPerMedico[a.medicoId];
-              if (distretto == null || !distrettiSelezionati.contains(distretto.codice)) {
-                return false;
-              }
-            }
-            return true;
-          }).toList();
+      body: Column(
+        children: [
+          // Filtri distretto / zona / area
+          const TripleFilterRow(),
+          const Divider(height: 1),
+          Expanded(
+            child: calendarioAsync.when(
+              data: (appuntamenti) {
+                final bool hasFiltri = zoneSelezionate.isNotEmpty ||
+                    distrettiSelezionati.isNotEmpty ||
+                    areeSelezionate.isNotEmpty;
+                final proposti = appuntamenti.where((a) {
+                  if (a.stato.isConcluso) return false;
+                  if (!hasFiltri) return true;
+                  // Filtro per zona
+                  if (zoneSelezionate.isNotEmpty &&
+                      !zoneSelezionate.contains(zonaPerMedico[a.medicoId])) {
+                    return false;
+                  }
+                  // Filtro per distretto
+                  if (distrettiSelezionati.isNotEmpty) {
+                    final distretto = distrettoPerMedico[a.medicoId];
+                    if (distretto == null || !distrettiSelezionati.contains(distretto.codice)) {
+                      return false;
+                    }
+                  }
+                  // Filtro per area della fascia principale del medico
+                  if (areeSelezionate.isNotEmpty) {
+                    final idArea = fasciaPrincipaleMap[a.medicoId]?.idArea;
+                    if (idArea == null || !areeSelezionate.contains(idArea)) {
+                      return false;
+                    }
+                  }
+                  return true;
+                }).toList();
 
-          // Separa gli scaduti (concordati/confermati con data passata) dai futuri
-          final scaduti = proposti.where((a) => a.isScaduto).toList();
-          final futuri = proposti.where((a) => !a.isScaduto).toList();
+                // Separa gli scaduti (concordati/confermati con data passata) dai futuri
+                final scaduti = proposti.where((a) => a.isScaduto).toList();
+                final futuri = proposti.where((a) => !a.isScaduto).toList();
 
-          if (proposti.isEmpty) {
-            return _emptyState(context);
-          }
+                if (proposti.isEmpty) {
+                  return _emptyState(context);
+                }
 
-          final sortedFuturi = List<CalendarioAppuntamento>.from(futuri)
-            ..sort((a, b) => a.data.compareTo(b.data));
-          final sortedScaduti = List<CalendarioAppuntamento>.from(scaduti)
-            ..sort((a, b) => a.data.compareTo(b.data));
+                final sortedFuturi = List<CalendarioAppuntamento>.from(futuri)
+                  ..sort((a, b) => a.data.compareTo(b.data));
+                final sortedScaduti = List<CalendarioAppuntamento>.from(scaduti)
+                  ..sort((a, b) => a.data.compareTo(b.data));
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              if (sortedScaduti.isNotEmpty) ...[
-                _sectionHeader(
-                  'Scaduti (${sortedScaduti.length})',
-                  color: Colors.orange,
-                  icon: Icons.warning_amber_rounded,
-                ),
-                const SizedBox(height: 8),
-                ...sortedScaduti.map((app) {
-                  final medico = medicoMap[app.medicoId];
-                  return _buildAppuntamentoTile(context, app, medico, ref, isScaduto: true);
-                }),
-                const SizedBox(height: 16),
-              ],
-              ...sortedFuturi.map((app) {
-                final medico = medicoMap[app.medicoId];
-                return _buildAppuntamentoTile(context, app, medico, ref, isScaduto: false);
-              }),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Errore: $err')),
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    if (sortedScaduti.isNotEmpty) ...[
+                      ...sortedScaduti.map((app) {
+                        final medico = medicoMap[app.medicoId];
+                        return _buildAppuntamentoTile(context, app, medico, ref, isScaduto: true);
+                      }),
+                      const SizedBox(height: 16),
+                    ],
+                    ...sortedFuturi.map((app) {
+                      final medico = medicoMap[app.medicoId];
+                      return _buildAppuntamentoTile(context, app, medico, ref, isScaduto: false);
+                    }),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Center(child: Text('Errore: $err')),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -144,32 +151,6 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.grey.shade500,
                 ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Header di sezione con colore di sfondo.
-  Widget _sectionHeader(String title, {required Color color, required IconData icon}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
           ),
         ],
       ),
@@ -700,68 +681,6 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
     );
   }
 
-  void _showFilterDialog(
-    BuildContext context,
-    WidgetRef ref,
-    AsyncValue<List<Zona>> zoneAsync,
-  ) {
-    final distrettiAsync = ref.watch(distrettoProvider);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Filtra per Zona e Distretto'),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    // Sezione Distretti - ordinate alfabeticamente
-                    if (distrettiAsync.hasValue) ...[
-                      const Text(
-                        'Distretti',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 8),
-                      ..._buildDistrettoFilterList(distrettiAsync.value!, ref, setStateDialog),
-                      const SizedBox(height: 16),
-                    ],
-                    // Sezione Zone
-                    if (zoneAsync.hasValue) ...[
-                      const Text(
-                        'Zone',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 8),
-                      ..._buildZonaFilterList(zoneAsync.value!, ref, setStateDialog),
-                    ],
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Chiudi'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    ref.read(zoneSelezionateProvider.notifier).clearAll();
-                    ref.read(distrettiSelezionatiProvider.notifier).clearAll();
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Pulisci Filtri'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
   /// Esporta gli appuntamenti in un file Excel.
   void _esportaExcel(
     BuildContext context,
@@ -864,66 +783,4 @@ class ProssimiAppuntamentiScreen extends ConsumerWidget {
     }
   }
 
-  /// Costruisce la lista dei filtri per zona.
-  /// L'esclusività con i distretti è gestita da `onChanged`.
-  List<Widget> _buildZonaFilterList(
-    List<Zona> zone,
-    WidgetRef ref,
-    void Function(void Function()) setStateDialog,
-  ) {
-    final zoneSelezionate = ref.watch(zoneSelezionateProvider);
-    final zoneList = List<Zona>.from(zone)..sort((a, b) => a.nome.compareTo(b.nome));
-    return zoneList.map((zona) {
-      final isSelected = zoneSelezionate.contains(zona.id);
-      return CheckboxListTile(
-        key: ValueKey('zona-${zona.id}'),
-        value: isSelected,
-        title: Text(zona.nome),
-        secondary: Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: zona.colore,
-            shape: BoxShape.circle,
-          ),
-        ),
-        onChanged: (v) {
-          // Esclusività: pulisco i distretti quando seleziono una zona
-          ref.read(distrettiSelezionatiProvider.notifier).clearAll();
-          ref
-              .read(zoneSelezionateProvider.notifier)
-              .toggle(zona.id);
-          setStateDialog(() {});
-        },
-      );
-    }).toList();
   }
-
-  /// Costruisce la lista dei filtri per distretto.
-  /// L'esclusività con le zone è gestita da `onChanged`.
-  List<Widget> _buildDistrettoFilterList(
-    List<Distretto> distretti,
-    WidgetRef ref,
-    void Function(void Function()) setStateDialog,
-  ) {
-    final distrettiSelezionati = ref.watch(distrettiSelezionatiProvider);
-    final distrettiList = List<Distretto>.from(distretti)..sort((a, b) => a.descrizione.compareTo(b.descrizione));
-    return distrettiList.map((distretto) {
-      final isSelected = distrettiSelezionati.contains(distretto.codice);
-      return CheckboxListTile(
-        key: ValueKey('distretto-${distretto.codice}'),
-        value: isSelected,
-        title: Text(distretto.descrizione),
-        secondary: const Icon(Icons.map_outlined, size: 20),
-        onChanged: (v) {
-          // Esclusività: pulisco le zone quando seleziono un distretto
-          ref.read(zoneSelezionateProvider.notifier).clearAll();
-          ref
-              .read(distrettiSelezionatiProvider.notifier)
-              .toggle(distretto.codice);
-          setStateDialog(() {});
-        },
-      );
-    }).toList();
-  }
-}

@@ -10,6 +10,7 @@ import 'package:informatoreMS/presentation/providers/calendario_provider.dart';
 import 'package:informatoreMS/presentation/providers/medici_provider.dart';
 import 'package:informatoreMS/presentation/providers/specializzazione_provider.dart';
 import 'package:informatoreMS/presentation/providers/distretto_provider.dart';
+import 'package:informatoreMS/presentation/providers/area_provider.dart';
 import 'package:informatoreMS/presentation/screens/specializzazioni_screen.dart';
 import 'package:uuid/uuid.dart';
 
@@ -384,6 +385,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
           'struttura': fasciaPrincipale.struttura,
           'indirizzo': fasciaPrincipale.indirizzo,
           'tempoVisitaMinuti': fasciaPrincipale.tempoVisitaMinuti,
+          'idArea': fasciaPrincipale.idArea,
         };
       } else if (scelta == false) {
         // Mostra dialog per nuovi dettagli
@@ -457,6 +459,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
           struttura: dettagliFascia['struttura'] as String?,
           indirizzo: dettagliFascia['indirizzo'] as String?,
           tempoVisitaMinuti: dettagliFascia['tempoVisitaMinuti'] as int?,
+          idArea: dettagliFascia['idArea'] as String?,
         ));
       });
     }
@@ -517,6 +520,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
       builder: (context) {
         int? selectedDistretto;
         String? selectedZonaId;
+        String? selectedIdArea;
         String? struttura;
         String? indirizzo;
         int? tempoVisitaMinuti;
@@ -594,6 +598,12 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                       onChanged: (v) => indirizzo = v,
                     ),
                     const SizedBox(height: 12),
+                    const SizedBox(height: 12),
+                    _AreaDropdownField(
+                      value: selectedIdArea,
+                      onChanged: (v) => selectedIdArea = v,
+                    ),
+                    const SizedBox(height: 12),
                     TextFormField(
                       decoration: const InputDecoration(labelText: 'Durata visita (min)'),
                       keyboardType: TextInputType.number,
@@ -608,7 +618,9 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
             TextButton(onPressed: () => Navigator.pop(context, null), child: const Text('Annulla')),
             TextButton(
               onPressed: () {
-                if (selectedDistretto != null && selectedZonaId != null) {
+                if (selectedDistretto != null &&
+                    selectedZonaId != null &&
+                    selectedIdArea != null) {
                   Navigator.pop(context, {
                     'distrettoId': selectedDistretto,
                     'zonaId': selectedZonaId,
@@ -616,6 +628,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                     'indirizzo': indirizzo,
                     'tempoVisitaMinuti': tempoVisitaMinuti,
                     'isFittizia': isDisattivata,
+                    'idArea': selectedIdArea,
                   });
                 }
               },
@@ -634,6 +647,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
       builder: (context) {
         int? selectedDistretto;
         String? selectedZonaId;
+        String? selectedIdArea;
         String? struttura;
         String? indirizzo;
         int? tempoVisitaMinuti;
@@ -709,6 +723,12 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                       onChanged: (v) => indirizzo = v,
                     ),
                     const SizedBox(height: 12),
+                    const SizedBox(height: 12),
+                    _AreaDropdownField(
+                      value: selectedIdArea,
+                      onChanged: (v) => selectedIdArea = v,
+                    ),
+                    const SizedBox(height: 12),
                     TextFormField(
                       decoration: const InputDecoration(
                         labelText: 'Durata visita (min)',
@@ -751,7 +771,9 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
             TextButton(onPressed: () => Navigator.pop(context, null), child: const Text('Annulla')),
             TextButton(
               onPressed: () {
-                if (selectedDistretto != null && selectedZonaId != null) {
+                if (selectedDistretto != null &&
+                    selectedZonaId != null &&
+                    selectedIdArea != null) {
                   Navigator.pop(context, {
                     'distrettoId': selectedDistretto,
                     'zonaId': selectedZonaId,
@@ -760,6 +782,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                     'tempoVisitaMinuti': tempoVisitaMinuti,
                     'giorniSettimana': giorniSelezionati.isEmpty ? null : giorniSelezionati,
                     'isFittizia': isDisattivata,
+                    'idArea': selectedIdArea,
                   });
                 }
               },
@@ -793,6 +816,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
       builder: (context) {
         int? selectedDistretto = fascia.distrettoId;
         String? selectedZonaId = fascia.zonaId;
+        String? selectedIdArea = fascia.idArea;
         String? struttura = fascia.struttura;
         String? indirizzo = fascia.indirizzo;
         int? tempoVisitaMinuti = fascia.tempoVisitaMinuti;
@@ -875,6 +899,11 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                       error: (_, __) => const Text('Errore'),
                     ),
                     const SizedBox(height: 12),
+                    _AreaDropdownField(
+                      value: selectedIdArea,
+                      onChanged: (v) => selectedIdArea = v,
+                    ),
+                    const SizedBox(height: 12),
                     TextFormField(
                       initialValue: struttura ?? '',
                       decoration: const InputDecoration(labelText: 'Struttura'),
@@ -927,7 +956,9 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
             TextButton(onPressed: () => Navigator.pop(context, null), child: const Text('Annulla')),
             TextButton(
               onPressed: () {
-                if (selectedDistretto != null && selectedZonaId != null) {
+                if (selectedDistretto != null &&
+                    selectedZonaId != null &&
+                    selectedIdArea != null) {
                   Navigator.pop(context, {
                     'distrettoId': selectedDistretto,
                     'zonaId': selectedZonaId,
@@ -936,6 +967,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
                     'tempoVisitaMinuti': tempoVisitaMinuti,
                     'giorniSettimana': giorniSelezionati.isEmpty ? null : giorniSelezionati,
                     'isFittizia': isDisattivata,
+                    'idArea': selectedIdArea,
                   });
                 }
               },
@@ -956,6 +988,7 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
           struttura: result['struttura'] as String?,
           indirizzo: result['indirizzo'] as String?,
           tempoVisitaMinuti: result['tempoVisitaMinuti'] as int?,
+          idArea: result['idArea'] as String?,
           giorniSettimana: result['giorniSettimana'] as List<GiornoSettimana>?,
           isFittizia: result['isFittizia'] as bool? ?? false,
         );
@@ -1042,5 +1075,41 @@ class _MedicoEditScreenState extends ConsumerState<MedicoEditScreen> {
       );
       Navigator.of(context).pop();
     }
+  }
+}
+
+/// Dropdown per la selezione obbligatoria dell'area in una fascia oraria.
+/// Riutilizzato nei 3 dialog dei dettagli fascia di [MedicoEditScreen].
+class _AreaDropdownField extends ConsumerWidget {
+  final String? value; // idArea selezionato (null se nessuno)
+  final ValueChanged<String?> onChanged;
+
+  const _AreaDropdownField({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final areeAsync = ref.watch(areaProvider);
+
+    return areeAsync.when(
+      data: (aree) {
+        // Se il valore salvato non esiste più tra le aree, parti da null
+        // per evitare l'errore del DropdownButton con value fuori dalla lista.
+        final validValue =
+            (value != null && aree.any((a) => a.id == value)) ? value : null;
+        return DropdownButtonFormField<String>(
+          value: validValue,
+          isExpanded: true,
+          decoration: const InputDecoration(labelText: 'Area'),
+          items: aree.map((a) => DropdownMenuItem(
+                value: a.id,
+                child: Text('${a.id} — ${a.nome}'),
+              )).toList(),
+          onChanged: onChanged,
+          validator: (v) => v == null ? 'Seleziona un\'area' : null,
+        );
+      },
+      loading: () => const LinearProgressIndicator(),
+      error: (_, __) => const Text('Errore caricamento aree'),
+    );
   }
 }

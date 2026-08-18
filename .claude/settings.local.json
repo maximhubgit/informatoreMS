@@ -79,7 +79,13 @@
       "Bash(python *)",
       "Bash(powershell *)",
       "PowerShell(dart analyze *)",
-      "Skill(claude-api)"
+      "Skill(claude-api)",
+      "Bash(xargs grep -l \"sqflite\\\\|Hive\\\\|localStorage\\\\|shared_preferences\\\\|floor\\\\|drift\\\\|isar\")",
+      "Bash(xargs grep -l \"class.*Repository\\\\|abstract.*Repository\")",
+      "Bash(pip list *)",
+      "Read(//c/users/maxim/informatorems/scripts/**)",
+      "Bash(DRY_RUN=1 python crea_aree_e_aggiorna_fasce.py)",
+      "Bash(DRY_RUN=1 python scripts/crea_aree_e_aggiorna_fasce.py)"
     ]
   }
 }

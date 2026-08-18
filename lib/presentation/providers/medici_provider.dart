@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:informatoreMS/core/models/area.dart';
 import 'package:informatoreMS/core/models/distretto.dart';
 import 'package:informatoreMS/presentation/providers/distretto_provider.dart';
 import 'package:informatoreMS/core/models/fascia_oraria.dart';
@@ -7,6 +8,7 @@ import 'package:informatoreMS/core/models/medico.dart';
 import 'package:informatoreMS/data/repositories/fascia_oraria_repository.dart';
 import 'package:informatoreMS/data/repositories/medico_repository.dart';
 import 'package:informatoreMS/presentation/providers/zone_selezionate_provider.dart';
+import 'package:informatoreMS/presentation/providers/area_provider.dart';
 
 // Import con alias per evitare conflitti
 import 'package:informatoreMS/data/repositories/remote/firebase_medico_repository.dart' as firebase;
@@ -191,6 +193,18 @@ final fasciaByIdProvider = Provider<Map<String, FasciaOraria>>((ref) {
   };
 });
 
+/// Mappa memoizzata medicoId -> Area della fascia principale (nr=0).
+/// Utile per filtri e visualizzazione.
+final areaPerMedicoMapProvider = Provider<Map<String, Area>>((ref) {
+  final fasceAsync = ref.watch(fasceOrarieProvider);
+  final fasce = fasceAsync.valueOrNull ?? const <FasciaOraria>[];
+  final areaById = ref.watch(areaByIdProvider);
+  return {
+    for (final f in fasce)
+      if (f.nr == 0 && f.idArea != null) f.idMedico: areaById[f.idArea!] ?? const Area(id: '', nome: ''),
+  };
+});
+
 /// Mappa memoizzata medicoId -> zonaId della fascia principale (nr=0).
 /// Calcolata una sola volta per render, evita di filtrare tutte le fasce
 /// in ogni widget che necessita di questa associazione.
@@ -249,4 +263,10 @@ final mediciFiltratiProvider = Provider<AsyncValue<List<Medico>>>((ref) {
     loading: () => const AsyncValue.loading(),
     error: (err, stack) => AsyncValue.error(err, stack),
   );
+});
+
+/// Provider per ottenere il provider dell'area di un medico specifico.
+final areaPerMedicoProvider = Provider.family<Area?, String>((ref, medicoId) {
+  final areaPerMedicoMap = ref.watch(areaPerMedicoMapProvider);
+  return areaPerMedicoMap[medicoId];
 });

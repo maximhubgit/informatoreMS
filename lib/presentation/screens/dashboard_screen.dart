@@ -121,14 +121,19 @@ class DashboardScreen extends ConsumerWidget {
                               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    fontSize: 14,
                                   ),
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Medici',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                fontSize: 16,
+                            Expanded(
+                              child: Text(
+                                'Dott',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
                           ],
@@ -246,7 +251,7 @@ class DashboardScreen extends ConsumerWidget {
                           s.stato == StatoCalendario.fatto)
                       .length;
 
-                  final appuntamentiLabel = '$appuntamentiAnno/$appuntamentiPrevisti previsti';
+                  final appuntamentiLabel = '$appuntamentiAnno/$appuntamentiPrevisti app';
 
                   return GestureDetector(
                     onTap: () {
@@ -289,19 +294,19 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 12),
                           _buildStatItem(
-                            label: 'Anno corrente',
+                            label: 'Anno',
                             value: '$appuntamentiAnno',
                             context: context,
                             isSecondary: true,
                           ),
                           _buildStatItem(
-                            label: 'Mese corrente',
+                            label: 'Mese',
                             value: '$appuntamentiMese',
                             context: context,
                             isSecondary: true,
                           ),
                           _buildStatItem(
-                            label: 'Settimana corrente',
+                            label: 'Settimana',
                             value: '$appuntamentiSettimana',
                             context: context,
                             isSecondary: true,
@@ -422,7 +427,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildListItem(BuildContext context, CalendarioAppuntamento app, Map<String, FasciaOraria> fasciaById, Map<String, Zona> zonaById) {
     final fascia = fasciaById[app.fasciaOrariaId ?? ''];
     final zona = fascia != null ? zonaById[fascia.zonaId] : null;
-    final zonaNome = zona != null ? (zona.nome.length > 10 ? zona.nome.substring(0, 10) : zona.nome) : '';
+    final zonaNome = zona != null ? (zona.nome.length > 12 ? zona.nome.substring(0, 12) : zona.nome) : '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -439,21 +444,31 @@ class DashboardScreen extends ConsumerWidget {
             color: app.stato.colore,
           ),
           const SizedBox(width: 12),
-          Text(
-            app.soloData.formatItalia(),
-            style: const TextStyle(fontSize: 13),
-          ),
-          if (zonaNome.isNotEmpty) ...[
-            const SizedBox(width: 6),
-            Text(
-              '[$zonaNome]',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade600,
-              ),
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  app.soloData.formatItalia(),
+                  style: const TextStyle(fontSize: 13),
+                ),
+                if (zonaNome.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      '[$zonaNome]',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ],
-          const Spacer(),
+          ),
+          const SizedBox(width: 8),
           Text(
             app.oraFormattata,
             style: TextStyle(

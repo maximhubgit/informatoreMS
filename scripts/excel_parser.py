@@ -61,6 +61,7 @@ class FasciaRecord:
                                   # (asl, distretto, zona, struttura, indirizzo) di
                                   # un medico che non ha orari reali. Esclusa dalla
                                   # pianificazione dello scheduler.
+    id_area: Optional[str] = None  # area collegata alla fascia (da codArea in Excel)
 
 
 @dataclass
@@ -191,6 +192,7 @@ def _aggiungi_fascia_fittizia(
         struttura=struttura,
         indirizzo=indirizzo,
         is_fittizia=True,
+        id_area=None,
     ))
 
 
@@ -661,6 +663,7 @@ def parse_excel(
                     zona_id=zone_seen[zn_lower],  # placeholder, verra' risolto dopo insert zone
                     struttura=struttura,
                     indirizzo=indirizzo,
+                    id_area=None,
                 ))
                 nr_counter += 1
 

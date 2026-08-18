@@ -11,6 +11,7 @@ import 'package:informatoreMS/presentation/screens/appuntamenti_concordati_scree
 import 'package:informatoreMS/presentation/screens/calendario_mese_screen.dart';
 import 'package:informatoreMS/presentation/screens/asl_screen.dart';
 import 'package:informatoreMS/presentation/screens/distretti_screen.dart';
+import 'package:informatoreMS/presentation/screens/aree_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -212,6 +213,11 @@ class AppDrawer extends ConsumerWidget {
                       icon: Icons.map_outlined,
                       label: 'Distretti',
                       onTap: () => _openScreen(context, const DistrettiScreen()),
+                    ),
+                    _DrawerItem(
+                      icon: Icons.grid_on_outlined,
+                      label: 'Aree',
+                      onTap: () => _openScreen(context, const AreeScreen()),
                     ),
                     const SizedBox(height: 12),
                   ],

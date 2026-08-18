@@ -1,0 +1,802 @@
+{
+  "corso domenico cirillo 25, Grumo Nevano": {
+    "lat": 40.9370592,
+    "lon": 14.2569994,
+    "display": "25, Corso Domenico Cirillo, San Domenico, Grumo Nevano, Napoli, Campania, 80028, Italia"
+  },
+  "via orsi 8, Napoli": {
+    "lat": 40.8519524,
+    "lon": 14.2327245,
+    "display": "Via Giuseppe Orsi, Rione Antignano, Arenella, Municipalità 5, Napoli, Campania, 80129, Italia"
+  },
+  "via Pansini 5, Arenella, Napoli": {
+    "lat": 40.8639287,
+    "lon": 14.2212351,
+    "display": "Via Sergio Pansini, Rione Alto, Arenella, Municipalità 5, Santa Croce, Napoli, Campania, 80131, Italia"
+  },
+  "via presidio 5, Aversa": {
+    "lat": 40.9730466,
+    "lon": 14.2027762,
+    "display": "Via Presidio, Rione Costantinopoli, Borgo San Lorenzo, Aversa, Caserta, Campania, 81031, Italia"
+  },
+  "cassa marittima, Napoli": {
+    "lat": 44.2771233,
+    "lon": 12.346313,
+    "display": "Cassa di Risparmio di Cesena, 16, Viale Ravenna, Milano Marittima, Cervia, Ravenna, Emilia-Romagna, 48015, Italia"
+  },
+  "via petrarca 173, Chiaia, Napoli": {
+    "lat": 40.8211226,
+    "lon": 14.2116397,
+    "display": "Petrarca - Via Nevio, Via Nevio, Villanova di Posillipo, Posillipo, Municipalità 1, Napoli, Campania, 80122, Italia"
+  },
+  "Via Egiziaca a Forcella, 18, 80139 Napoli (NA)": {
+    "lat": 40.8504928,
+    "lon": 14.2641011,
+    "display": "Via Egiziaca a Forcella, Porta Nolana, Pendino, Municipalità 2, Napoli, Campania, 80139, Italia"
+  },
+  "Via Mario Fiore, 6, 80129 Napoli": {
+    "lat": 40.8490294,
+    "lon": 14.2310214,
+    "display": "Via Mario Fiore, Rione Antignano, Arenella, Municipalità 5, Napoli, Campania, 80129, Italia"
+  },
+  "Via Posillipo, 226, 80123 Napoli (NA)": {
+    "lat": 40.8050156,
+    "lon": 14.2031647,
+    "display": "Via Posillipo, Capo di Posillipo, Posillipo, Municipalità 1, Coroglio, Napoli, Campania, 80123, Italia"
+  },
+  "via dei bersaglieri 52, Caserta": {
+    "lat": 41.1248023,
+    "lon": 14.7901904,
+    "display": "Via dei Bersaglieri, Mellusi-Atlantici, Benevento, Campania, 82100, Italia"
+  },
+  "via mario fiore, Arenella, Napoli": {
+    "lat": 40.8490294,
+    "lon": 14.2310214,
+    "display": "Via Mario Fiore, Rione Antignano, Arenella, Municipalità 5, Napoli, Campania, 80129, Italia"
+  },
+  "asl san gennaro antignano, Napoli": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via irlanda 7, Santa Maria Capua Venere": {
+    "lat": 37.0937064,
+    "lon": 15.2804864,
+    "display": "7, Via Irlanda, Acradina, Siracusa, Sicilia, 96100, Italia"
+  },
+  "piazza carlo iii, Poggioreale": {
+    "lat": 40.8627781,
+    "lon": 14.2665478,
+    "display": "Piazza Carlo III, Arenaccia, Vicaria, Municipalità 4, Napoli, Campania, 80141, Italia"
+  },
+  "corso italia 143, Villaricca": {
+    "lat": 40.9190245,
+    "lon": 14.189071,
+    "display": "Corso Italia, Villaricca, Napoli, Campania, 80012, Italia"
+  },
+  "via giuseppe de falco, Caserta": {
+    "lat": 41.0862897,
+    "lon": 14.3382389,
+    "display": "Via Giuseppe de Falco, Caserta, Puccianiello, Mezzano, Caserta, Campania, 81100, Italia"
+  },
+  "via canonico scherillo 12, Soccavo, Napoli": {
+    "lat": 40.847761,
+    "lon": 14.2007705,
+    "display": "Via Canonico Giovanni Scherillo, Soccavo, Municipalità 9, Camaldoli, Napoli, Campania, 80126, Italia"
+  },
+  "via san pasquale a chiaia 55, Chiaia, Napoli": {
+    "lat": 40.8352362,
+    "lon": 14.2361089,
+    "display": "Via San Pasquale a Chiaia, Chiaia, Municipalità 1, Napoli, Campania, 80121, Italia"
+  },
+  "Napoli": {
+    "lat": 40.8358846,
+    "lon": 14.2487679,
+    "display": "Napoli, Campania, Italia"
+  },
+  "via servio tullio 101, Soccavo, Napoli": {
+    "lat": 40.8442061,
+    "lon": 14.1987871,
+    "display": "Via Servio Tullio, Soccavo, Municipalità 9, Camaldoli, Napoli, Campania, 80126, Italia"
+  },
+  "via luca tozzi 39, Frignano": {
+    "lat": 40.9971032,
+    "lon": 14.1804313,
+    "display": "Via Luca Tozzi, Frignano, Caserta, Campania, 81030, Italia"
+  },
+  "via fuori le mura 20, Sorrento": {
+    "lat": 40.9747763,
+    "lon": 14.1991282,
+    "display": "Via fuori le Mura, Borgo San Lorenzo, Aversa, Caserta, Campania, 81031, Italia"
+  },
+  "Acerra": {
+    "lat": 40.9460532,
+    "lon": 14.3750083,
+    "display": "Acerra, Napoli, Campania, Italia"
+  },
+  "via luca giordano 64, San Sebastiano Al Vesuvio": {
+    "lat": 40.8491317,
+    "lon": 14.3635976,
+    "display": "Via Luca Giordano, San Sebastiano al Vesuvio, Napoli, Campania, 80056, Italia"
+  },
+  "via salvatore di giacomo 82, Aversa": {
+    "lat": 40.9990364,
+    "lon": 14.1363378,
+    "display": "Via Salvatore di Giacomo, San Cipriano d'Aversa, Caserta, Campania, 81033, Italia"
+  },
+  "via santa chiara, Caivano": {
+    "lat": 40.9609237,
+    "lon": 14.2995972,
+    "display": "Via Santa Chiara, Parco Verde, Caivano, Napoli, Campania, 80024, Italia"
+  },
+  "Frattamaggiore": {
+    "lat": 40.9414265,
+    "lon": 14.2722092,
+    "display": "Frattamaggiore, Napoli, Campania, Italia"
+  },
+  "via panzini 8, Monteruscello, Napoli": {
+    "lat": 40.8603465,
+    "lon": 14.0786806,
+    "display": "Via Alfredo Panzini, Parco Sereno, Trepiccioni, Monterusciello, Pozzuoli, Napoli, Campania, 80072, Italia"
+  },
+  "via palizzi 84, Chiaia, Napoli": {
+    "lat": 40.8406824,
+    "lon": 14.2372954,
+    "display": "Via Filippo Palizzi, Chiaia, Municipalità 1, Napoli, Campania, 80121, Italia"
+  },
+  "via errico alvino 37, Napoli": {
+    "lat": 40.6987836,
+    "lon": 14.4832897,
+    "display": "Via Errico Alvino, Castellammare di Stabia, Napoli, Campania, 80053, Italia"
+  },
+  "via alvino 2, Vomero, Napoli": {
+    "lat": 40.8428297,
+    "lon": 14.2308345,
+    "display": "2, Via Enrico Alvino, Rione Antignano, Vomero, Municipalità 5, Napoli, Campania, 80127, Italia"
+  },
+  "via follieri 13, Pozzuoli": {
+    "lat": 40.8265192,
+    "lon": 14.1214086,
+    "display": "Via Follieri, Pozzuoli, Rione Bognar, Cigliano, Pozzuoli, Napoli, Campania, 80078, Italia"
+  },
+  "via sementini 13, San Carlo All'Arena, Napoli": {
+    "lat": 40.8617635,
+    "lon": 14.2206132,
+    "display": "Via Antonio e Luigi Sementini, Rione Alto, Arenella, Municipalità 5, Santa Croce, Napoli, Campania, 80131, Italia"
+  },
+  "via montenuovo licola patria 120, Monteruscello, Napoli": {
+    "lat": 40.8519056,
+    "lon": 14.0713991,
+    "display": "Via Montenuovo Licola Patria, La Schiana, Nuova Colmata, Pozzuoli, Napoli, Campania, 80072, Italia"
+  },
+  "via cimarosa 32, Vomero, Napoli": {
+    "lat": 40.8429082,
+    "lon": 14.2347611,
+    "display": "Via Domenico Cimarosa, Vomero, Municipalità 5, Napoli, Campania, 80129, Italia"
+  },
+  "via elena 21, Macerata Campania": {
+    "lat": 41.0661894,
+    "lon": 14.2709388,
+    "display": "Via Elena, Macerata Campania, Casalba, Caturano, Macerata Campania, Caserta, Campania, 81047, Italia"
+  },
+  "via vincenzo tiberio 21, Fuorigrotta, Napoli": {
+    "lat": 40.8351235,
+    "lon": 14.1879841,
+    "display": "Via Vincenzo Tiberio, Rione Lauro, Fuorigrotta, Municipalità 10, Napoli, Campania, 80125, Italia"
+  },
+  "via francesco arnaldi 31, Pianura, Napoli": {
+    "lat": 40.8576222,
+    "lon": 14.1671944,
+    "display": "Via Francesco Arnaldi, Pianura, Municipalità 9, Astroni, Napoli, Campania, 80126, Italia"
+  },
+  "via cappella o mercato di sabato, Bacoli, Napoli": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via Egiziaca a forcell 18, Napoli": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via Terracciano, Pozzuoli, Napoli": {
+    "lat": 40.9015573,
+    "lon": 14.3471246,
+    "display": "Terracciano, Via Nazionale delle Puglie, Tavernanova, Casalnuovo di Napoli, Napoli, Campania, 80013, Italia"
+  },
+  "via san mauro 38, Casoria": {
+    "lat": 40.9025886,
+    "lon": 14.2897652,
+    "display": "Via San Mauro, Dietro Via Vecchia, Casoria, Napoli, Campania, 80026, Italia"
+  },
+  "via giuseppe fiorelli 5, Fuorigrotta, Napoli": {
+    "lat": 40.8344959,
+    "lon": 14.2390511,
+    "display": "Via Giuseppe Fiorelli, San Ferdinando, Municipalità 1, Napoli, Campania, 80121, Italia"
+  },
+  "via montella 14, Maddaloni": {
+    "lat": 41.038627,
+    "lon": 14.3751789,
+    "display": "Via Montella, Maddaloni, Caserta, Campania, 81024, Italia"
+  },
+  "via romaniello, Trentola Ducenta": {
+    "lat": 40.9714449,
+    "lon": 14.1723991,
+    "display": "Via Romaniello, Trentola Ducenta, Caserta, Campania, 81038, Italia"
+  },
+  "via francesco daniele 2, Caserta": {
+    "lat": 41.0676245,
+    "lon": 14.367994,
+    "display": "Via Francesco Daniele, San Clemente, Parco degli Aranci, Tredici, San Clemente, Caserta, Campania, 81020, Italia"
+  },
+  "via porpora 19, Napoli": {
+    "lat": 40.8514237,
+    "lon": 14.229515,
+    "display": "Via Nicola Antonio Porpora, Rione Antignano, Arenella, Municipalità 5, Napoli, Campania, 80128, Italia"
+  },
+  "via edoardo nicolardi, Colli Aminei, Napoli": {
+    "lat": 40.8734278,
+    "lon": 14.2370252,
+    "display": "Via Edoardo Nicolardi, Colli Aminei, Stella, Municipalità 3, Paratina, Napoli, Campania, 80131, Italia"
+  },
+  "via dolomiti, Trentola Ducenta": {
+    "lat": 40.9800475,
+    "lon": 14.1873087,
+    "display": "Via Dolomiti, Trentola Ducenta, Caserta, Campania, 81030, Italia"
+  },
+  "via matteo renato imbriani 23, Afragola": {
+    "lat": 40.9173926,
+    "lon": 14.305636,
+    "display": "Via Matteo Renato Imbriani, Sant'Antonio, Via Vecchia, Afragola, Napoli, Campania, 80021, Italia"
+  },
+  "via tino da camaino 4, Napoli": {
+    "lat": 40.378377,
+    "lon": 15.5411574,
+    "display": "Via Tino da Camaino, Località Piedimonte, Teggiano, Salerno, Campania, 84039, Italia"
+  },
+  "via davide winspeare, Rione Flegreo, Napoli": {
+    "lat": 40.8307524,
+    "lon": 14.1984342,
+    "display": "Via Davide Winspeare, Rione Lauro, Fuorigrotta, Municipalità 10, Napoli, Campania, 80125, Italia"
+  },
+  "via speranzella 105, Napoli": {
+    "lat": 40.8416767,
+    "lon": 14.247839,
+    "display": "Via Speranzella, Quartieri Spagnoli, Montecalvario, Municipalità 2, Napoli, Campania, 80134, Italia"
+  },
+  "via morelli 24, San Ferdinando, Napoli": {
+    "lat": 40.8334329,
+    "lon": 14.2426269,
+    "display": "Via Domenico Morelli, Pizzofalcone, San Ferdinando, Municipalità 1, Napoli, Campania, 80121, Italia"
+  },
+  "via quartiere 1, Casagiove": {
+    "lat": 41.0773549,
+    "lon": 14.3073933,
+    "display": "Via Quartiere Vecchio, Cuccagna, Casagiove, Caserta, Campania, 81022, Italia"
+  },
+  "via paul harris 79, Caserta": {
+    "lat": 41.0574796,
+    "lon": 14.340895,
+    "display": "Via Paul Harris, Acquaviva, Caserta, Campania, 81020, Italia"
+  },
+  "via attilio regolo 1, Fuorigrotta": {
+    "lat": 40.8255467,
+    "lon": 14.2002526,
+    "display": "Via Attilio Regolo, Fuorigrotta, Municipalità 10, Napoli, Campania, 80125, Italia"
+  },
+  "viale olimpico 102, Aversa": {
+    "lat": 40.9604036,
+    "lon": 14.2054913,
+    "display": "Viale Olimpico, Bagno d'Aversa, Aversa, Caserta, Campania, 81031, Italia"
+  },
+  "corso umberto i 365, Alvignano": {
+    "lat": 41.2417409,
+    "lon": 14.3377598,
+    "display": "Corso Umberto I, Rasignano, Alvignano, Caserta, Campania, 81010, Italia"
+  },
+  "via posillipo, Napoli": {
+    "lat": 40.8112876,
+    "lon": 14.2055898,
+    "display": "Via Posillipo, Posillipo, Municipalità 1, Napoli, Campania, 80123, Italia"
+  },
+  "via mario fiore, Vomero, Napoli": {
+    "lat": 40.8476083,
+    "lon": 14.2312029,
+    "display": "Via Mario Fiore, Rione Antignano, Vomero, Municipalità 5, Napoli, Campania, 80129, Italia"
+  },
+  "via merliani 20, Napoli": {
+    "lat": 40.8441225,
+    "lon": 14.2291883,
+    "display": "Via Giovanni Merliani, Rione Antignano, Vomero, Municipalità 5, Napoli, Campania, 80127, Italia"
+  },
+  "via monteruscello 42, Pozzuoli, Napoli": {
+    "lat": 40.8590872,
+    "lon": 14.0856425,
+    "display": "Via Monteruscello, Toiano, Monterusciello, Pozzuoli, Napoli, Campania, 80078, Italia"
+  },
+  "via sant alfonso dei liguori, Napoli": {
+    "lat": 40.7498815,
+    "lon": 14.4651047,
+    "display": "Via Sant'Alfonso dei Liguori, Torre Centrale, Rovigliano, Torre Annunziata, Napoli, Campania, 80058, Italia"
+  },
+  "via Pansini 5, Maddaloni, Napoli": {
+    "lat": 40.866515,
+    "lon": 14.2221869,
+    "display": "Via Sergio Pansini, Municipalità 8, Santa Croce, Napoli, Campania, 80131, Italia"
+  },
+  "via provinciale casafredda, Teano": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "corso vittorio emanuele 690 spi ex cpa, Chiaia, Napoli": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via Pansini, Napoli": {
+    "lat": 40.8668661,
+    "lon": 14.2222594,
+    "display": "Via Pansini (Policlinico), Via Sergio Pansini, Municipalità 8, Santa Croce, Napoli, Campania, 80131, Italia"
+  },
+  "via terracina 219, Fuorigrotta, Napoli": {
+    "lat": 40.8315859,
+    "lon": 14.1909488,
+    "display": "Via Terracina, Rione Lauro, Fuorigrotta, Municipalità 10, Napoli, Campania, 80125, Italia"
+  },
+  "via Santa Maria della Libertà, Vomero, Napoli": {
+    "lat": 44.784091,
+    "lon": 7.376112,
+    "display": "Piazza Martiri della Libertà, Via Giolitti, Abbazia di Santa Maria, Cavour, Torino, Piemonte, 10061, Italia"
+  },
+  "via giuseppe fiorelli 1, Chiaia, Napoli": {
+    "lat": 40.8344959,
+    "lon": 14.2390511,
+    "display": "Via Giuseppe Fiorelli, San Ferdinando, Municipalità 1, Napoli, Campania, 80121, Italia"
+  },
+  "via ugo ricci 8, Vomero, Napoli": {
+    "lat": 40.8405236,
+    "lon": 14.2191296,
+    "display": "Via Ugo Ricci, Vomero, Municipalità 5, Napoli, Campania, 80127, Italia"
+  },
+  "via colosimo 5, Secondigliano, Napoli": {
+    "lat": 40.8903531,
+    "lon": 14.265347,
+    "display": "Via Tommasina Colosimo, Secondigliano, Municipalità 7, Napoli, Campania, 80144, Italia"
+  },
+  "viale carlo iii 200, Caserta": {
+    "lat": 41.0601846,
+    "lon": 14.3235898,
+    "display": "Real Sito - OPES Caserta, Galoppatoio Ovest Viale Carlo III di Borbone, Acquaviva, Caserta, Campania, 81020, Italia"
+  },
+  "via francesco florimo 3, Arenella, Napoli": {
+    "lat": 37.0784455,
+    "lon": 14.246583,
+    "display": "Via Francesco Florimo, Settefarine, Gela, Caltanissetta, Sicilia, 93012, Italia"
+  },
+  "via raffaele caravaglios 4, Rione Flegreo, Napoli": {
+    "lat": 40.824522,
+    "lon": 14.2027336,
+    "display": "4, Via Raffaele Caravaglios, Fuorigrotta, Municipalità 10, Napoli, Campania, 80125, Italia"
+  },
+  "corso 1° ottobre 3, Maddaloni": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via aldo moro 23, Lusciano": {
+    "lat": 40.9626596,
+    "lon": 14.1965826,
+    "display": "Via Aldo Moro, Lusciano, Caserta, Campania, 81030, Italia"
+  },
+  "via nazionale delle puglie 167, Taverna Nova": {
+    "lat": 40.9020715,
+    "lon": 14.3524824,
+    "display": "Farmacia Dr. Carmine Russo, 167, Via Nazionale delle Puglie, Tavernanova, Casalnuovo di Napoli, Napoli, Campania, 80013, Italia"
+  },
+  "corso principe umberto i, Caivano": {
+    "lat": 42.3507523,
+    "lon": 13.3998968,
+    "display": "Lastra commemorativa di Umberto I, Corso Principe Umberto, Quarto di Santa Maria, Torretta, L'Aquila, Abruzzo, 67100, Italia"
+  },
+  "viale paul harris 79, Caserta": {
+    "lat": 41.0597322,
+    "lon": 14.3412317,
+    "display": "Viale Paul Harris, San Benedetto, Caserta, Campania, 81020, Italia"
+  },
+  "via luca giordano 69, Napoli": {
+    "lat": 40.8469023,
+    "lon": 14.2277538,
+    "display": "Via Luca Giordano, Rione Antignano, Vomero, Municipalità 5, Napoli, Campania, 80128, Italia"
+  },
+  "via domenico fontana 74, Arenella, Napoli": {
+    "lat": 40.859747,
+    "lon": 14.2238005,
+    "display": "Via Domenico Fontana, Rione Alto, Arenella, Municipalità 5, Santa Croce, Napoli, Campania, 80131, Italia"
+  },
+  "via piave, Napoli": {
+    "lat": 40.8400973,
+    "lon": 14.2117672,
+    "display": "Via Piave, Rione Piave, Fuorigrotta, Municipalità 10, Camaldoli, Napoli, Campania, 80122, Italia"
+  },
+  "via campania 1, Caserta": {
+    "lat": 41.0652028,
+    "lon": 14.3580037,
+    "display": "Via Campania, Caserta, Parco degli Aranci, Tredici, San Clemente, Caserta, Campania, 81020, Italia"
+  },
+  "traversa f. d ambrosio 9, Frattamaggiore": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via Campanella 9, Aversa": {
+    "lat": 45.4295246,
+    "lon": 9.0534829,
+    "display": "9, Via Tommaso Campanella, Quartiere Marconi, Quartiere Morona, Cascina Gaggia, Trezzano sul Naviglio, Milano, Lombardia, 20090, Italia"
+  },
+  "corso italia 111, Quarto": {
+    "lat": 40.8776282,
+    "lon": 14.124852,
+    "display": "Corso Italia, Quarto, Napoli, Campania, 80010, Italia"
+  },
+  "via Stafetta 125, Giugliano": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via de pretis 114, Napoli": {
+    "lat": 40.9019162,
+    "lon": 14.2803014,
+    "display": "Via Agostino De Pretis, Casavatore, Napoli, Campania, 80020, Italia"
+  },
+  "via vallone, Maddaloni": {
+    "lat": 41.0344386,
+    "lon": 14.3923133,
+    "display": "Via Vallone, Maddaloni, Caserta, Campania, 81024, Italia"
+  },
+  "viale michelangelo, Arenella, Napoli": {
+    "lat": 40.8486341,
+    "lon": 14.2347863,
+    "display": "Viale Michelangelo, Rione Antignano, Vomero, Municipalità 5, Napoli, Campania, 80129, Italia"
+  },
+  "Maddaloni": {
+    "lat": 41.0398815,
+    "lon": 14.3792066,
+    "display": "Maddaloni, Caserta, Campania, Italia"
+  },
+  "via alessio simmarco mazzocchi, Santa Maria Capua Vetere": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via caduti sul lavoro 15, Caiazzo": {
+    "lat": 41.1802263,
+    "lon": 14.3614294,
+    "display": "Via Caduti sul Lavoro, Papari o Liporti, Caiazzo, Caserta, Campania, 81013, Italia"
+  },
+  "via pietro gobbetti 31, Macerata Campania": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via palasciano, Caserta": {
+    "lat": 41.1072228,
+    "lon": 14.2098111,
+    "display": "Via Edoardo Palasciano, Capua, Caserta, Campania, 81043, Italia"
+  },
+  "via generale ulloa 10, Poggioreale": {
+    "lat": 40.8636967,
+    "lon": 14.2718416,
+    "display": "Via Generale Girolamo Calà Ulloa, Arenaccia, Vicaria, Municipalità 4, Napoli, Campania, 80141, Italia"
+  },
+  "via scarlatti 105, Vomero, Napoli": {
+    "lat": 40.8435604,
+    "lon": 14.2278047,
+    "display": "Via Alessandro Scarlatti, Rione Antignano, Vomero, Municipalità 5, Napoli, Campania, 80127, Italia"
+  },
+  "corso italia 383, Quarto, Napoli": {
+    "lat": 40.8789506,
+    "lon": 14.1348356,
+    "display": "Corso Italia, Casalanno, Quarto, Napoli, Campania, 80010, Italia"
+  },
+  "via bagnoli 714, Bagnoli, Napoli": {
+    "lat": 40.8155628,
+    "lon": 14.1715888,
+    "display": "Via Bagnoli, Bagnoli, Municipalità 10, Coroglio, Napoli, Campania, 80124, Italia"
+  },
+  "via cacciapuoti 7, Arco Felice, Napoli": {
+    "lat": 40.8338265,
+    "lon": 14.0969533,
+    "display": "7, Via Cacciapuoti, Arco Felice, Lucrino, Pozzuoli, Napoli, Campania, 80078, Italia"
+  },
+  "via vittorio veneto 36, Torre Del Greco": {
+    "lat": 40.790288,
+    "lon": 14.3684378,
+    "display": "Via Vittorio Veneto, Sant'Antonio, Torre del Greco, Napoli, Campania, 80056, Italia"
+  },
+  "via vaccaro 23, Vomero, Napoli": {
+    "lat": 40.8418429,
+    "lon": 14.2278834,
+    "display": "Via Andrea Vaccaro, Vomero, Municipalità 5, Napoli, Campania, 80127, Italia"
+  },
+  "via san carlo 16, San Ferdinando, Napoli": {
+    "lat": 40.8380741,
+    "lon": 14.2498816,
+    "display": "16, Via San Carlo, San Ferdinando, Municipalità 1, Napoli, Campania, 80132, Italia"
+  },
+  "via camellara, San Felice A Cancello": {
+    "lat": 41.0239571,
+    "lon": 14.4980347,
+    "display": "Via Camellara, Arienzo, Caserta, Campania, 81021, Italia"
+  },
+  "via degli oleandri, Casalnuovo": {
+    "lat": 41.0701234,
+    "lon": 14.3565463,
+    "display": "Via degli Oleandri, Caserta, Parco degli Aranci, Tredici, San Clemente, Caserta, Campania, 81020, Italia"
+  },
+  "via flavio gioia, Acerra": {
+    "lat": 40.9471299,
+    "lon": 14.379247,
+    "display": "Via Flavio Gioia, Acerra, Napoli, Campania, 80011, Italia"
+  },
+  "via fratelli de simone 26, Santa Maria Capua Vetere": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via ugo foscolo 4, Portico Di Caserta": {
+    "lat": 41.0568428,
+    "lon": 14.2751634,
+    "display": "Via Ugo Foscolo, Portico di Caserta, Caserta, Campania, 81047, Italia"
+  },
+  "piazza salvatore di giacomo, Posillipo, Napoli": {
+    "lat": 40.804074,
+    "lon": 14.2013374,
+    "display": "Piazza Salvatore di Giacomo, Posillipo, Municipalità 1, Napoli, Campania, Italia"
+  },
+  "via largisi 19, Castel Morrone": {
+    "lat": 41.125579,
+    "lon": 14.3424761,
+    "display": "Via Largisi, Gradillo, Castel Morrone, Caserta, Campania, Italia"
+  },
+  "Caiazzo": {
+    "lat": 41.1783215,
+    "lon": 14.3649478,
+    "display": "Caiazzo, Caserta, Campania, 81013, Italia"
+  },
+  "via nazionale 175, Torre Del Greco": {
+    "lat": 40.7628232,
+    "lon": 14.4240517,
+    "display": "Via Nazionale, Leopardi, Torre del Greco, Napoli, Campania, 80059, Italia"
+  },
+  "via giuseppe fiorelli 5, Posillipo, Napoli": {
+    "lat": 40.8344959,
+    "lon": 14.2390511,
+    "display": "Via Giuseppe Fiorelli, San Ferdinando, Municipalità 1, Napoli, Campania, 80121, Italia"
+  },
+  "via Pansini 5, Napoli": {
+    "lat": 40.8660658,
+    "lon": 14.2220263,
+    "display": "Via Sergio Pansini, Arenella, Municipalità 8, Santa Croce, Napoli, Campania, 80131, Italia"
+  },
+  "via acquaviva, Napoli": {
+    "lat": 40.9545481,
+    "lon": 14.3002741,
+    "display": "Via Acquaviva, Parco Verde, Caivano, Napoli, Campania, 80024, Italia"
+  },
+  "via roma, Caserta": {
+    "lat": 41.0699427,
+    "lon": 14.3363348,
+    "display": "Via Roma, Caserta, Falciano, Tuoro, Caserta, Campania, 81100, Italia"
+  },
+  "via netti, Arenella, Napoli": {
+    "lat": 40.8524052,
+    "lon": 14.2213791,
+    "display": "Via Francesco Netti, Arenella, Municipalità 5, Napoli, Campania, 80128, Italia"
+  },
+  "via sementini 13, Rione Alto, Napoli": {
+    "lat": 40.8617635,
+    "lon": 14.2206132,
+    "display": "Via Antonio e Luigi Sementini, Rione Alto, Arenella, Municipalità 5, Santa Croce, Napoli, Campania, 80131, Italia"
+  },
+  "via cesare battisti 15, Montecalvario, Napoli": {
+    "lat": 40.843806,
+    "lon": 14.249871,
+    "display": "Via Cesare Battisti, Rione Carità, San Giuseppe, Municipalità 2, Napoli, Campania, 80134, Italia"
+  },
+  "via porpora 19, Vomero, Napoli": {
+    "lat": 45.1007414,
+    "lon": 7.6967017,
+    "display": "19, Via Nicola Porpora, Rebaudengo, Circoscrizione 6, Torino, Piemonte, 10155, Italia"
+  },
+  "farmacia gava, Castellammare, Napoli": {
+    "lat": 40.7007261,
+    "lon": 14.489974,
+    "display": "Farmacia Gava, Via Giuseppe Cosenza, Rione San Marco, Pioppaino, Castellammare di Stabia, Napoli, Campania, 80053, Italia"
+  },
+  "via Stafetta 125, Giugliano, Napoli": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via alessandro manzoni 199, Chiaia, Napoli": {
+    "lat": 40.8355584,
+    "lon": 14.2116671,
+    "display": "Via Alessandro Manzoni, Chiaia, Municipalità 1, Napoli, Campania, 80122, Italia"
+  },
+  "via domenico fontana 40, Napoli": {
+    "lat": 40.8552822,
+    "lon": 14.2295413,
+    "display": "Via Domenico Fontana, Arenella, Municipalità 5, Santa Croce, Napoli, Campania, 80128, Italia"
+  },
+  "via alessandro volta, Sant'Arpino": {
+    "lat": 40.9481238,
+    "lon": 14.2538811,
+    "display": "Via Alessandro Volta, Sant'Arpino, Caserta, Campania, 80028, Italia"
+  },
+  "via giovanni amendola 29, Santa Maria Capua Vetere": {
+    "lat": 41.0742286,
+    "lon": 14.2545203,
+    "display": "Via Giovanni Amendola, Santa Maria Capua Vetere, Sant'Andrea dei Lagni, Santa Maria Capua Vetere, Caserta, Campania, 81055, Italia"
+  },
+  "via michelangelo buonarroti 110, Aversa": {
+    "lat": 40.967107,
+    "lon": 14.2056081,
+    "display": "Via Michelangelo Buonarroti, Rione Costantinopoli, Bagno d'Aversa, Aversa, Caserta, Campania, 81031, Italia"
+  },
+  "salita cariati 24 f, Pollena Trocchia": {
+    "lat": 40.8396987,
+    "lon": 14.2440687,
+    "display": "Salita Cariati, Quartieri Spagnoli, Montecalvario, Municipalità 2, Napoli, Campania, 80132, Italia"
+  },
+  "via mario fiore, Napoli": {
+    "lat": 40.8490294,
+    "lon": 14.2310214,
+    "display": "Via Mario Fiore, Rione Antignano, Arenella, Municipalità 5, Napoli, Campania, 80129, Italia"
+  },
+  "via posillipo 239, Posillipo, Napoli": {
+    "lat": 40.8112876,
+    "lon": 14.2055898,
+    "display": "Via Posillipo, Posillipo, Municipalità 1, Napoli, Campania, 80123, Italia"
+  },
+  "via Annunziata, Pendino, Napoli": {
+    "lat": 40.8511742,
+    "lon": 14.2647454,
+    "display": "Via dell'Annunziata, Porta Nolana, Pendino, Municipalità 2, Napoli, Campania, 80139, Italia"
+  },
+  "via florimo, Napoli": {
+    "lat": 38.3473928,
+    "lon": 16.0861418,
+    "display": "Via Florimo, Cittanova, Reggio Calabria, Calabria, 89022, Italia"
+  },
+  "via Egiziaca a Forcella 18, Pendino, Napoli": {
+    "lat": 40.8504928,
+    "lon": 14.2641011,
+    "display": "Via Egiziaca a Forcella, Porta Nolana, Pendino, Municipalità 2, Napoli, Campania, 80139, Italia"
+  },
+  "via manzoni 244, Posillipo, Napoli": {
+    "lat": 40.8169787,
+    "lon": 14.2012171,
+    "display": "Via Alessandro Manzoni, Villanova di Posillipo, Posillipo, Municipalità 1, Coroglio, Napoli, Campania, 80123, Italia"
+  },
+  "via servio tullio, Soccavo, Napoli": {
+    "lat": 40.8442061,
+    "lon": 14.1987871,
+    "display": "Via Servio Tullio, Soccavo, Municipalità 9, Camaldoli, Napoli, Campania, 80126, Italia"
+  },
+  "largo alessandro lala 16, Rione Flegreo, Napoli": {
+    "lat": 40.8271137,
+    "lon": 14.2048514,
+    "display": "Largo Alessandro Lala, Fuorigrotta, Municipalità 10, Napoli, Campania, 80125, Italia"
+  },
+  "Torre Annunziata, Napoli": {
+    "lat": 40.7525236,
+    "lon": 14.4550044,
+    "display": "Torre Annunziata, Napoli, Campania, 80058, Italia"
+  },
+  "parco san paolo, Fuorigrotta, Napoli": {
+    "lat": 40.8354542,
+    "lon": 14.1890121,
+    "display": "Parco San Paolo, Rione Lauro, Fuorigrotta, Municipalità 10, Napoli, Campania, 80125, Italia"
+  },
+  "via scarlatti 200, Vomero, Napoli": {
+    "lat": 40.8435604,
+    "lon": 14.2278047,
+    "display": "Via Alessandro Scarlatti, Rione Antignano, Vomero, Municipalità 5, Napoli, Campania, 80127, Italia"
+  },
+  "Pozzuoli, Napoli": {
+    "lat": 40.822643,
+    "lon": 14.1219109,
+    "display": "Pozzuoli, Napoli, Campania, 80078, Italia"
+  },
+  "piazza degli artisti, Napoli": {
+    "lat": 40.8479711,
+    "lon": 14.2285021,
+    "display": "Piazza degli Artisti, Rione Antignano, Vomero, Municipalità 5, Napoli, Campania, Italia"
+  },
+  "via campi flegrei 4/b, Pozzuoli, Napoli": {
+    "lat": 40.8312667,
+    "lon": 14.1144688,
+    "display": "Via Campi Flegrei, Pozzuoli, Rione Bognar, Cigliano, Pozzuoli, Napoli, Campania, 80078, Italia"
+  },
+  "via francesco giordani 23, Chiaia, Napoli": {
+    "lat": 40.8358439,
+    "lon": 14.2211011,
+    "display": "Via Francesco Giordani, Chiaia, Municipalità 1, Napoli, Campania, 80122, Italia"
+  },
+  "via cervantes 55/5, Napoli": {
+    "lat": 40.8412247,
+    "lon": 14.2510041,
+    "display": "Via Miguel Cervantes de Savedra, Rione Carità, San Giuseppe, Municipalità 2, Napoli, Campania, 80133, Italia"
+  },
+  "via domenico fontana 74, Napoli": {
+    "lat": 40.8552822,
+    "lon": 14.2295413,
+    "display": "Via Domenico Fontana, Arenella, Municipalità 5, Santa Croce, Napoli, Campania, 80128, Italia"
+  },
+  "piazza san petro 78, Santa Maria Capua Vetere": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "zona arco felice, Pozzuoli, Napoli": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "via crispi, Chiaia, Napoli": {
+    "lat": 40.836045,
+    "lon": 14.2297696,
+    "display": "Via Francesco Crispi, Chiaia, Municipalità 1, Napoli, Campania, 80127, Italia"
+  },
+  "San Giorgio A Cremano": {
+    "lat": 40.8292962,
+    "lon": 14.3341677,
+    "display": "San Giorgio a Cremano, Napoli, Campania, 80046, Italia"
+  },
+  "via franceco crispi, Napoli": {
+    "lat": -100.0,
+    "lon": -100.0,
+    "display": null
+  },
+  "piazza carità 15 marcianise, Marcianise": {
+    "lat": 41.0345844,
+    "lon": 14.2925696,
+    "display": "Caffè Dejavu, 15, Piazza Carità, Marcianise, Pagani di Marcianise, Marcianise, Caserta, Campania, 81025, Italia"
+  },
+  "via antonio cardarelli 1, Arzano": {
+    "lat": 40.9119174,
+    "lon": 14.2605114,
+    "display": "Via Antonio Cardarelli, Lanciasino, Arzano, Napoli, Campania, 80022, Italia"
+  },
+  "via vecchia san gennaro 106, Pozzuoli, Napoli": {
+    "lat": 40.8250978,
+    "lon": 14.1327422,
+    "display": "Liceo Statale \"Virgilio\", 106, Via Vecchia San Gennaro, Pozzuoli, Rione La Solfatara, Cigliano, Pozzuoli, Napoli, Campania, 80078, Italia"
+  },
+  "piazza nazionale, Poggioreale": {
+    "lat": 40.8588675,
+    "lon": 14.2739638,
+    "display": "Piazza Nazionale, Arenaccia, Vicaria, Municipalità 4, Napoli, Campania, 80142, Italia"
+  },
+  "via dell epomeo 301, Soccavo, Napoli": {
+    "lat": 40.8451821,
+    "lon": 14.2020608,
+    "display": "Via dell'Epomeo, Soccavo, Municipalità 9, Camaldoli, Napoli, Campania, 80126, Italia"
+  },
+  "corso duca d aosta 13, Pianura, Napoli": {
+    "lat": 40.8622401,
+    "lon": 14.1745118,
+    "display": "Corso Duca d'Aosta, Pianura, Municipalità 9, Guantai, Napoli, Campania, 80126, Italia"
+  },
+  "via marconi traversa 7, Casapesenna": {
+    "lat": 40.7736164,
+    "lon": 9.6698961,
+    "display": "7, Via Guglielmo Marconi, Stirritoggiu, San Teodoro, Gallura Nord-Est Sardegna, Sardegna, 08020, Italia"
+  },
+  "via francesco de gregorio 9/b, Portici": {
+    "lat": 45.9454417,
+    "lon": 12.6592189,
+    "display": "Via Giovanni Francesco Fortunio, San Gregorio, Borgo Meduna, Vallenoncello, Pordenone, Friuli-Venezia Giulia, 33170, Italia"
+  }
+}

@@ -50,7 +50,7 @@ class FasciaOraria extends Equatable {
   final bool isFittizia; // Se true, fascia "segnaposto" usata solo per conservare i
                         // dati anagrafici del medico (indirizzo/struttura/zona/distretto)
                         // quando non ha orari reali. Sempre 00:00-00:00 domenica.
-                        // Esclusa dalla pianificazione dello scheduler.
+  final String? idArea; // Area collegata alla fascia (chiave esterna, opzionale)
 
   const FasciaOraria({
     this.id,
@@ -67,6 +67,7 @@ class FasciaOraria extends Equatable {
     this.tempoVisitaMinuti,
     this.deleted = false,
     this.isFittizia = false,
+    this.idArea,
   });
 
   /// Se true, la fascia vale per tutti i giorni della settimana.
@@ -105,6 +106,7 @@ class FasciaOraria extends Equatable {
     int? tempoVisitaMinuti,
     bool? deleted,
     bool? isFittizia,
+    String? idArea,
   }) {
     return FasciaOraria(
       id: id ?? this.id,
@@ -121,6 +123,7 @@ class FasciaOraria extends Equatable {
       tempoVisitaMinuti: tempoVisitaMinuti ?? this.tempoVisitaMinuti,
       deleted: deleted ?? this.deleted,
       isFittizia: isFittizia ?? this.isFittizia,
+      idArea: idArea ?? this.idArea,
     );
   }
 
@@ -140,6 +143,7 @@ class FasciaOraria extends Equatable {
       'tempoVisitaMinuti': tempoVisitaMinuti,
       'deleted': deleted,
       'isFittizia': isFittizia,
+      'idArea': idArea,
     };
   }
 
@@ -194,6 +198,7 @@ class FasciaOraria extends Equatable {
           (json['tempoVisitaMinuti'] as num?)?.toInt(),
       deleted: json['deleted'] as bool? ?? false,
       isFittizia: json['isFittizia'] as bool? ?? false,
+      idArea: json['idArea'] as String?,
     );
   }
 
