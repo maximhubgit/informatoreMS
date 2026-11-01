@@ -1,0 +1,12 @@
+# Credenziali locali (NON committare)
+.env
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Ambiente virtuale
+venv/
+.venv/
+env/
